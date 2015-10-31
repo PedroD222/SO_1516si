@@ -16,8 +16,7 @@ void query_show_dll_process(HANDLE process) {
 			if (err != 0)
 				_tprintf(_T("ERROR: %d \n"), err);*/
 			//hMod = (HMODULE)mbi.AllocationBase;
-
-			//if (mbi.AllocationBase != NULL && mbi.BaseAddress == mbi.AllocationBase) {
+			//sem if apanha varias vezes a mesma dll
 			if (mbi.BaseAddress == mbi.AllocationBase) {
 				sizenamedll = GetModuleFileNameEx(process, (HMODULE)mbi.AllocationBase, name, _countof(name));
 				if (sizenamedll != 0)
@@ -50,7 +49,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	virtualqueryex iterar sobre todas as regiões, regiao committed, começar na 0,
 	getModuleFilenameEX handle process,
 						hmodule - corresponde ao endereçoi base de mapeamento da dll via virtual query*/
-	query_show_dll_process(process);
+	query_show_dll_process(process);//aparece exe é suposto??
 	int cl = CloseHandle(process);
 	if (cl == 0)
 		_tprintf(_T("ERROR: %d \n"), GetLastError());
