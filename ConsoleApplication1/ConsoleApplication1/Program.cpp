@@ -20,7 +20,7 @@ void query_show_dll_process(HANDLE process) {
 			if (mbi.BaseAddress == mbi.AllocationBase) {
 				sizenamedll = GetModuleFileNameEx(process, (HMODULE)mbi.AllocationBase, name, _countof(name));
 				if (sizenamedll != 0)
-					_tprintf(_T("Endereço Base: %d - Regiao %d - DLL: %s \n"), mbi.AllocationBase, mbi.RegionSize, name);
+					_tprintf(_T("Endereço Base: %d - Tamanho da Regiao %d - DLL: %s \n"), mbi.AllocationBase, mbi.RegionSize, name);
 				/*else {
 					_tprintf(_T("ERROR: %d \n"), GetLastError());
 				}*/
@@ -48,7 +48,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	/*open process
 	virtualqueryex iterar sobre todas as regiões, regiao committed, começar na 0,
 	getModuleFilenameEX handle process,
-						hmodule - corresponde ao endereçoi base de mapeamento da dll via virtual query*/
+						hmodule - corresponde ao endereço base de mapeamento da dll via virtual query*/
 	query_show_dll_process(process);//aparece exe é suposto??
 	int cl = CloseHandle(process);
 	if (cl == 0)
