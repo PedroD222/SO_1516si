@@ -11,19 +11,21 @@ void query_show_dll_process(HANDLE process) {
 	DWORD sizenamedll;
 	//HMODULE hMod;
 	while (VirtualQueryEx(process, adress, &mbi, sizeof(mbi))) {
+		err = GetLastError();
+		if (err != 0) {
+			_tprintf(_T("ERROR: %d \n"), err);
+		}
 		if (mbi.State == MEM_COMMIT) {
-			/*err = GetLastError();
-			if (err != 0)
-				_tprintf(_T("ERROR: %d \n"), err);*/
 			//hMod = (HMODULE)mbi.AllocationBase;
 			//sem if apanha varias vezes a mesma dll
 			if (mbi.BaseAddress == mbi.AllocationBase) {
 				sizenamedll = GetModuleFileNameEx(process, (HMODULE)mbi.AllocationBase, name, _countof(name));
+				err = GetLastError();
+				if (err != 0) {
+					_tprintf(_T("ERROR: %d \n"), err);
+				}
 				if (sizenamedll != 0)
 					_tprintf(_T("Endereço Base: %d - Tamanho da Regiao %d - DLL: %s \n"), mbi.AllocationBase, mbi.RegionSize, name);
-				/*else {
-					_tprintf(_T("ERROR: %d \n"), GetLastError());
-				}*/
 			}
 		}
 		adress += mbi.RegionSize;
