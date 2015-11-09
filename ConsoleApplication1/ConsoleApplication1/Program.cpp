@@ -3,29 +3,34 @@
 
 #include "stdafx.h"
 
+void show_error(DWORD err) {
+	if (err ) {
+		_tprintf(_T("ERROR : %d \n"), err);
+	}
+}
+
 void query_show_dll_process(HANDLE process) {
 	MEMORY_BASIC_INFORMATION mbi;
 	PBYTE adress = NULL;
 	DWORD err = 0;
 	wchar_t name[MAX_PATH];
 	DWORD sizenamedll;
-	//HMODULE hMod;
+	
 	while (VirtualQueryEx(process, adress, &mbi, sizeof(mbi))) {
-		err = GetLastError();
-		if (err != 0) {
-			_tprintf(_T("ERROR: %d \n"), err);
-		}
+		
 		if (mbi.State == MEM_COMMIT) {
-			//hMod = (HMODULE)mbi.AllocationBase;
-			//sem if apanha varias vezes a mesma dll
+			
+			//filtra caso dll ocupa mais de 1 região
 			if (mbi.BaseAddress == mbi.AllocationBase) {
 				sizenamedll = GetModuleFileNameEx(process, (HMODULE)mbi.AllocationBase, name, _countof(name));
-				err = GetLastError();
-				if (err != 0) {
-					_tprintf(_T("ERROR: %d \n"), err);
-				}
+				
 				if (sizenamedll != 0)
-					_tprintf(_T("Endereço Base: %d - Tamanho da Regiao %d - DLL: %s \n"), mbi.AllocationBase, mbi.RegionSize, name);
+					_tprintf(_T("Endereço Base: 0x%0x - Tamanho da Regiao: %d - DLL: %s \n"), mbi.AllocationBase, mbi.RegionSize, name);
+				/*else
+				{
+					_tprintf(_T("ERROR GETMODULEFILENAMEEX \n"));
+					show_error(GetLastError());
+				}*/
 			}
 		}
 		adress += mbi.RegionSize;
@@ -35,7 +40,7 @@ void query_show_dll_process(HANDLE process) {
 int _tmain(int argc, _TCHAR* argv[])
 {
 	if (argc < 2) {
-		_tprintf(_T("Usage: program <pid>\n"));
+		_tprintf(_T("PID Missing. Usage: program <pid>\n"));
 		getchar();
 		return 1;
 	}
@@ -47,15 +52,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		getchar();
 		return 1;
 	}
-	/*open process
-	virtualqueryex iterar sobre todas as regiões, regiao committed, começar na 0,
-	getModuleFilenameEX handle process,
-						hmodule - corresponde ao endereço base de mapeamento da dll via virtual query*/
-	query_show_dll_process(process);//aparece exe é suposto??
+	
+	query_show_dll_process(process);
 	int cl = CloseHandle(process);
 	if (cl == 0)
-		_tprintf(_T("ERROR: %d \n"), GetLastError());
-	_tprintf(_T("Pressionar qualquer tecla para sair\n"));
+		show_error( GetLastError());
+	_tprintf(_T("Press and key to exit\n"));
 	getchar();
     return 0;
 }
