@@ -20,6 +20,10 @@ typedef struct pipe {
 	INT idxGet, idxPut;			// R/W indexes
 	INT nBytes;					// Avaiable bytes;
 
+	HANDLE hasElems, hasSpace;
+	CRITICAL_SECTION cs;
+	//need!!!???
+	//CRITICAL_SECTION cswrite;
 	// other (synchronization stuff)
 	// ...
 } PIPE, *PPIPE;
