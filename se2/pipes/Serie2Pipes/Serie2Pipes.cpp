@@ -38,6 +38,8 @@ static VOID PipeInit(PPIPE p) {
 	
 	p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T("fullPipeEv"));
 	p->hasElems = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"));
+	p->waitReaders = CreateEvent(NULL, FALSE, TRUE, _T("WaitReaders"));
+	p->waitWriters = CreateEvent(NULL, FALSE, TRUE, _T("WaitWriters"));
 	InitializeCriticalSection(&p->cs);
 	// other (synchronization, for instance) initialization stuf....
 	// .... 
@@ -53,7 +55,7 @@ static VOID PipeDestroy(PPIPE p) {
 // pipe read internal operation
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	printf("PipeReadInternal not implemented!\n");
-	WaitForSingleObject(p->hasElems, INFINITE);
+	
 	EnterCriticalSection(&p->cs);
 	if (p->nBytes == 0 && p->nWriters == 0) {
 		LeaveCriticalSection(&p->cs);
@@ -61,7 +63,7 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	}
 	LeaveCriticalSection(&p->cs);
 	//verify here?? or before if
-	//WaitForSingleObject(p->hasElems, INFINITE);
+	WaitForSingleObject(p->hasElems, INFINITE);
 
 	EnterCriticalSection(&p->cs);
 	int byteread =0;
@@ -106,7 +108,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	int bytewrite = 0;
 	PBYTE pb =(PBYTE) pbuf;
 	
-	while (bytewrite < ATOMIC_RW && p->nBytes <= BUFFER_SIZE) {
+	while (bytewrite < ATOMIC_RW && p->nBytes < BUFFER_SIZE) {
 		p->buffer[p->idxPut] = *(pb + bytewrite);
 		bytewrite++;
 		p->idxPut = ((p->idxPut++) % BUFFER_SIZE);
@@ -187,9 +189,12 @@ PPIPE PipeCreate() {
 HANDLE PipeOpenRead(PPIPE pipe) {
 	// To implement: add open for read logic here
 	printf("PipeOpenRead just partially implemented!\n");
+	//TODO wait escritor
+	SetEvent(pipe->waitReaders);
 	EnterCriticalSection(&pipe->cs);
 	pipe->nReaders++;
 	LeaveCriticalSection(&pipe->cs);
+	WaitForSingleObject(pipe->waitWriters, INFINITE);
 	return PHCreate(pipe, PIPE_READ);
 }
 
@@ -199,9 +204,12 @@ HANDLE PipeOpenRead(PPIPE pipe) {
 HANDLE PipeOpenWrite(PPIPE pipe) {
 	// To implement: add open for read logic here 
 	printf("PipeOpenWrite just partially implemented!\n");
+	//TODO wait por leitor
+	SetEvent(pipe->waitWriters);
 	EnterCriticalSection(&pipe->cs);
 	pipe->nWriters++;
 	LeaveCriticalSection(&pipe->cs);
+	WaitForSingleObject(pipe->waitReaders, INFINITE);
 	return PHCreate(pipe, PIPE_WRITE);
 }
 

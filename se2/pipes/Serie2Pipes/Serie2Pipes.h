@@ -21,6 +21,7 @@ typedef struct pipe {
 	INT nBytes;					// Avaiable bytes;
 
 	HANDLE hasElems, hasSpace;
+	HANDLE waitWriters, waitReaders;
 	CRITICAL_SECTION cs;
 	//need!!!???
 	//CRITICAL_SECTION cswrite;
