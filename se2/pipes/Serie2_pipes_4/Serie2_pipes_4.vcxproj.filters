@@ -24,7 +24,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Serie2Pipes\Serie2Pipes.h">
+    <ClInclude Include="pipes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,13 +32,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Serie2_pipes_distintprocess.cpp">
+    <ClCompile Include="Serie2_pipes_4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Serie2Pipes\Serie2Pipes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,14 +15,13 @@
 typedef struct pipe {
 	INT nReaders, nWriters;		// Number of readers and writers 
 								// (used among other reasons for pipe lifetime)
-	
+
 	BYTE buffer[BUFFER_SIZE];	// (circular) data buffer
 	INT idxGet, idxPut;			// R/W indexes
 	INT nBytes;					// Avaiable bytes;
 
 	HANDLE hasElems, hasSpace;
-	HANDLE waitWriters, waitReaders;
-	CRITICAL_SECTION cs;
+	HANDLE waitWriters, waitReaders, mutex;
 } PIPE, *PPIPE;
 
 
@@ -43,7 +42,3 @@ HANDLE PipeOpenWrite(PPIPE pipe);
 
 PIPESSERIE2_API
 VOID PipeClose(HANDLE h);
-
-
-
-

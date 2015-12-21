@@ -1,10 +1,9 @@
-// PipesSerie2.cpp : Defines the exported functions for the DLL application.
+// Serie2_pipes_4.cpp : Defines the exported functions for the DLL application.
 //
 
 #include "stdafx.h"
-#include "serie2pipes.h"
 
-// Pipe handle related definitions
+#include "pipes.h"
 
 // pipe operation modes
 #define PIPE_READ 1
@@ -42,7 +41,7 @@ static VOID PipeDestroy(PPIPE p) {
 	if (p->waitWriters != NULL)
 		CloseHandle(p->waitWriters);
 
-	DeleteCriticalSection(&p->cs);
+
 	free(p);
 }
 
@@ -52,8 +51,8 @@ static VOID PipeInit(PPIPE p) {
 	InitializeCriticalSection(&p->cs);
 
 	p->nReaders = p->nWriters = p->idxGet = p->idxPut = p->nBytes = 0;
-	
-	if((p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T("fullPipeEv"))) == NULL)
+
+	if ((p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T("fullPipeEv"))) == NULL)
 		goto error;
 	if ((p->hasElems = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"))) == NULL)
 		goto error;
@@ -61,15 +60,63 @@ static VOID PipeInit(PPIPE p) {
 		goto error;
 	if ((p->waitWriters = CreateEvent(NULL, FALSE, TRUE, _T("WaitWriters"))) == NULL)
 		goto error;
+
+	HANDLE procHandle;
+	if ((procHandle = OpenProcess(PROCESS_DUP_HANDLE, FALSE, p->shared->serverProcId)) == NULL)
+		goto error;
+	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
+		sizeof(PIPE), p);
+	if (p->mapHandle == NULL)
+		goto error;
+
+	p->shared = (PPIPE)MapViewOfFile(service->mapHandle, FILE_MAP_WRITE, 0, 0, 0);
+	service->shared->serverProcId = GetCurrentProcessId();
+	if (!DuplicateHandle(
+		GetCurrentProcess(),			// original process
+		p->hasElems,					// original handle
+		procHandle,						// destination process (server)
+		&, // event handle for server
+		0,								// desired access
+		FALSE,							// not inheritable
+		DUPLICATE_SAME_ACCESS))			// same access permissions as original
+		goto error;
+	if (!DuplicateHandle(
+		GetCurrentProcess(),			// original process
+		p->waitReaders,					// original handle
+		procHandle,						// destination process (server)
+		&, // event handle for server
+		0,								// desired access
+		FALSE,							// not inheritable
+		DUPLICATE_SAME_ACCESS))			// same access permissions as original
+		goto error;
+	if (!DuplicateHandle(
+		GetCurrentProcess(),			// original process
+		p->waitWriters,					// original handle
+		procHandle,						// destination process (server)
+		&, // event handle for server
+		0,								// desired access
+		FALSE,							// not inheritable
+		DUPLICATE_SAME_ACCESS))			// same access permissions as original
+		goto error;
+	if (!DuplicateHandle(
+		GetCurrentProcess(),			// original process
+		p->hasSpace,					// original handle
+		procHandle,						// destination process (server)
+		&, // event handle for server
+		0,								// desired access
+		FALSE,							// not inheritable
+		DUPLICATE_SAME_ACCESS))			// same access permissions as original
+		goto error;
 	return;
 error:
-	PipeDestroy(p);	
+	PipeDestroy(p);
+
 }
 
 // pipe read internal operation
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	printf("PipeReadInternal not implemented!\n");
-	
+
 	EnterCriticalSection(&p->cs);
 	if (p->nBytes == 0 && p->nWriters == 0) {
 		LeaveCriticalSection(&p->cs);
@@ -79,16 +126,16 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	WaitForSingleObject(p->hasElems, INFINITE);
 
 	EnterCriticalSection(&p->cs);
-	int byteread =0;
+	int byteread = 0;
 	BYTE pb[BUFFER_SIZE]; BYTE aux;
-	
-	while (byteread< toRead && byteread < p->nBytes) {
+
+	while (byteread < toRead && byteread < p->nBytes) {
 		aux = p->buffer[p->idxGet];
 		pb[byteread++] = p->buffer[p->idxGet];
 		p->idxGet = (p->idxGet++) % BUFFER_SIZE;
 		if (p->idxGet == BUFFER_SIZE)
 			p->idxGet = 0;
-		if (aux != p->buffer[p->idxGet] && byteread<toRead)
+		if (aux != p->buffer[p->idxGet] && byteread < toRead)
 			printf("erro");
 	}
 	memcpy(pbuf, pb, byteread);
@@ -96,13 +143,13 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	p->nBytes = p->nBytes - byteread;
 	/*BEFORE
 	if (p->nBytes < BUFFER_SIZE)
-		SetEvent(p->hasSpace);a reset a has elems*/
+	SetEvent(p->hasSpace);a reset a has elems*/
 	if (p->nBytes < BUFFER_SIZE)
 		SetEvent(p->hasSpace);
 	if (p->nBytes == 0) {
 		ResetEvent(p->hasElems);
 	}
-	
+
 	LeaveCriticalSection(&p->cs);
 	//end here
 	return byteread;
@@ -118,8 +165,8 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	//verifier possibly write on space available
 	EnterCriticalSection(&p->cs);
 	int bytewrite = 0;
-	PBYTE pb =(PBYTE) pbuf;
-	
+	PBYTE pb = (PBYTE)pbuf;
+
 	while (bytewrite < ATOMIC_RW && p->nBytes < BUFFER_SIZE) {
 		p->buffer[p->idxPut] = *(pb + bytewrite);
 		bytewrite++;
@@ -128,7 +175,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 			p->idxPut = 0;
 		p->nBytes++;
 	}
-		
+
 	if (p->nBytes >= 1) {
 		SetEvent(p->hasElems);
 	}
@@ -137,35 +184,35 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	}
 	LeaveCriticalSection(&p->cs);
 	return bytewrite;
-	
+
 	//end exclusion to atomic write
 	//enter exclusion 
 	//atomics??
 	/*EnterCriticalSection(&p->cs);
 	while (bytewrite < toWrite && p->nBytes < BUFFER_SIZE) {
-		p->buffer[p->idxPut] = pb[bytewrite++];
-		p->idxPut = (p->idxPut++) % BUFFER_SIZE;
-		p->nBytes++;
+	p->buffer[p->idxPut] = pb[bytewrite++];
+	p->idxPut = (p->idxPut++) % BUFFER_SIZE;
+	p->nBytes++;
 	}
 	if (p->nBytes == 1) {
-		ResetEvent(p->empty);
+	ResetEvent(p->empty);
 	}
 	if (p->nBytes == BUFFER_SIZE) {
-		SetEvent(p->full);
+	SetEvent(p->full);
 	}
-	
+
 	LeaveCriticalSection(&p->cs);*/
 }
 
 
 /*------------------------------------------------------
- * Writes in a pipe via the handle returned from PipeOpenWrite.
- * In case of success returns the number of written  (toWrite) bytes.
- * The calling thread is blocked while pipe is full, except if there are no
- * readers, returning the number of already written bytes in this case.
- * Besides pipe must have a minimum message size thta is atomically written 
- * supporting concurrently multiple writers 
- *--------------------------------------------------------------------*/
+* Writes in a pipe via the handle returned from PipeOpenWrite.
+* In case of success returns the number of written  (toWrite) bytes.
+* The calling thread is blocked while pipe is full, except if there are no
+* readers, returning the number of already written bytes in this case.
+* Besides pipe must have a minimum message size thta is atomically written
+* supporting concurrently multiple writers
+*--------------------------------------------------------------------*/
 DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite) {
 	PPIPE_HANDLE ph = (PPIPE_HANDLE)h;
 
@@ -185,8 +232,8 @@ DWORD PipeRead(HANDLE h, PVOID pbuf, INT toWrite) {
 }
 
 /*---------------------------------------------
- * Creates and initializes a new pipe
- *----------------------------------------------*/
+* Creates and initializes a new pipe
+*----------------------------------------------*/
 PPIPE PipeCreate() {
 	PPIPE pres = (PPIPE)malloc(sizeof(PIPE));
 	PipeInit(pres);
@@ -209,8 +256,8 @@ HANDLE PipeOpenRead(PPIPE pipe) {
 }
 
 /*----------------------------------------------------
- * Returns and HANDLE supporting  pipe access for write
- *-----------------------------------------------------*/
+* Returns and HANDLE supporting  pipe access for write
+*-----------------------------------------------------*/
 HANDLE PipeOpenWrite(PPIPE pipe) {
 	// To implement: add open for read logic here 
 	printf("PipeOpenWrite just partially implemented!\n");
@@ -224,21 +271,22 @@ HANDLE PipeOpenWrite(PPIPE pipe) {
 }
 
 /*-------------------------------------------------------------
- * Close the handle suppporting pipe access
- * the pipe is destroyed when there no readers nor writers.
- *-------------------------------------------------------------*/
+* Close the handle suppporting pipe access
+* the pipe is destroyed when there no readers nor writers.
+*-------------------------------------------------------------*/
 VOID PipeClose(HANDLE h) {
 	// To implement 
 	printf("PipeClose not implemented!\n");
-	
+
 	PPIPE_HANDLE p = (PPIPE_HANDLE)h;
 	EnterCriticalSection(&p->pipe->cs);
-	if (p->mode == PIPE_READ){
+	if (p->mode == PIPE_READ) {
 		p->pipe->nReaders--;
 		//LeaveCriticalSection(&p->pipe->cs);
-	}else
+	}
+	else
 		if (p->mode == PIPE_WRITE) {
-			p->pipe->nWriters--;	
+			p->pipe->nWriters--;
 			//LeaveCriticalSection(&p->pipe->cs);
 		}
 	//EnterCriticalSection(&p->pipe->cs);
