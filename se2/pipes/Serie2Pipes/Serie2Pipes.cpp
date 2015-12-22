@@ -57,9 +57,9 @@ static VOID PipeInit(PPIPE p) {
 		goto error;
 	if ((p->hasElems = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"))) == NULL)
 		goto error;
-	if ((p->waitReaders = CreateEvent(NULL, FALSE, TRUE, _T("WaitReaders"))) == NULL)
+	if ((p->waitReaders = CreateEvent(NULL, TRUE, TRUE, _T("WaitReaders"))) == NULL)
 		goto error;
-	if ((p->waitWriters = CreateEvent(NULL, FALSE, TRUE, _T("WaitWriters"))) == NULL)
+	if ((p->waitWriters = CreateEvent(NULL, TRUE, TRUE, _T("WaitWriters"))) == NULL)
 		goto error;
 	return;
 error:
@@ -69,7 +69,7 @@ error:
 // pipe read internal operation
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	printf("PipeReadInternal not implemented!\n");
-	
+
 	EnterCriticalSection(&p->cs);
 	if (p->nBytes == 0 && p->nWriters == 0) {
 		LeaveCriticalSection(&p->cs);
@@ -77,26 +77,38 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	}
 	LeaveCriticalSection(&p->cs);
 	WaitForSingleObject(p->hasElems, INFINITE);
-
+	
+	int byte = toRead - ATOMIC_RW;
+	EnterCriticalSection(&p->cs);
+	int n = (p->nBytes - ATOMIC_RW);
+	int nb = (p->nBytes - toRead);
+	LeaveCriticalSection(&p->cs);
+	if(byte > 0 )
+		while (n < 0) {
+			EnterCriticalSection(&p->cs);
+			n = p->nBytes - ATOMIC_RW;
+			LeaveCriticalSection(&p->cs);
+		}	
+	else 
+		while (nb < 0) {
+			EnterCriticalSection(&p->cs);
+			nb = p->nBytes - toRead;
+			LeaveCriticalSection(&p->cs);
+		}
 	EnterCriticalSection(&p->cs);
 	int byteread =0;
-	BYTE pb[BUFFER_SIZE]; BYTE aux;
+	BYTE pb[BUFFER_SIZE];
 	
-	while (byteread< toRead && byteread < p->nBytes) {
-		aux = p->buffer[p->idxGet];
+	while (byteread< toRead && byteread < p->nBytes && byteread<ATOMIC_RW) {
+		
 		pb[byteread++] = p->buffer[p->idxGet];
-		p->idxGet = (p->idxGet++) % BUFFER_SIZE;
-		if (p->idxGet == BUFFER_SIZE)
-			p->idxGet = 0;
-		if (aux != p->buffer[p->idxGet] && byteread<toRead)
-			printf("erro");
+		p->idxGet = (++p->idxGet) % BUFFER_SIZE;
 	}
+	
 	memcpy(pbuf, pb, byteread);
 
 	p->nBytes = p->nBytes - byteread;
-	/*BEFORE
-	if (p->nBytes < BUFFER_SIZE)
-		SetEvent(p->hasSpace);a reset a has elems*/
+
 	if (p->nBytes < BUFFER_SIZE)
 		SetEvent(p->hasSpace);
 	if (p->nBytes == 0) {
@@ -104,7 +116,9 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	}
 	
 	LeaveCriticalSection(&p->cs);
-	//end here
+	
+	if (byte > 0)
+		return byteread + PipeReadInternal(p, pb+byteread, byte);
 	return byteread;
 }
 
@@ -113,19 +127,39 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	printf("PipeWriteInternal not implemented!\n");
 
 	WaitForSingleObject(p->hasSpace, INFINITE);
+	int byte = toWrite- ATOMIC_RW;
+
+	EnterCriticalSection(&p->cs);
+	int n = (ATOMIC_RW + p->nBytes); 
+	int nb = (p->nBytes + toWrite);
+	LeaveCriticalSection(&p->cs);
+
+	if (byte>0)
+		while (n > BUFFER_SIZE) {
+			EnterCriticalSection(&p->cs);
+			n = (ATOMIC_RW + p->nBytes);
+			LeaveCriticalSection(&p->cs);
+		}
+	else 
+		while (nb > BUFFER_SIZE) {
+			EnterCriticalSection(&p->cs);
+			nb = (p->nBytes + toWrite);
+			LeaveCriticalSection(&p->cs);
+		}
+	
 	//in exclusion
+	////quando não existe toWrite bytes space mas não cheio
 	//counter c bytes lidos para sair de cs apos byteatomicwrite reached and after reenter
 	//verifier possibly write on space available
 	EnterCriticalSection(&p->cs);
 	int bytewrite = 0;
 	PBYTE pb =(PBYTE) pbuf;
 	
-	while (bytewrite < ATOMIC_RW && p->nBytes < BUFFER_SIZE) {
+	while (bytewrite < ATOMIC_RW && p->nBytes < BUFFER_SIZE && bytewrite<toWrite) {
 		p->buffer[p->idxPut] = *(pb + bytewrite);
 		bytewrite++;
-		p->idxPut = ((p->idxPut++) % BUFFER_SIZE);
-		if (p->idxPut == BUFFER_SIZE)
-			p->idxPut = 0;
+		p->idxPut = (++p->idxPut) % BUFFER_SIZE;
+		
 		p->nBytes++;
 	}
 		
@@ -136,25 +170,10 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 		ResetEvent(p->hasSpace);
 	}
 	LeaveCriticalSection(&p->cs);
+	
+	if (byte>0)
+		return bytewrite + PipeWriteInternal(p, pb+bytewrite,byte);
 	return bytewrite;
-	
-	//end exclusion to atomic write
-	//enter exclusion 
-	//atomics??
-	/*EnterCriticalSection(&p->cs);
-	while (bytewrite < toWrite && p->nBytes < BUFFER_SIZE) {
-		p->buffer[p->idxPut] = pb[bytewrite++];
-		p->idxPut = (p->idxPut++) % BUFFER_SIZE;
-		p->nBytes++;
-	}
-	if (p->nBytes == 1) {
-		ResetEvent(p->empty);
-	}
-	if (p->nBytes == BUFFER_SIZE) {
-		SetEvent(p->full);
-	}
-	
-	LeaveCriticalSection(&p->cs);*/
 }
 
 
@@ -199,8 +218,9 @@ PPIPE PipeCreate() {
 HANDLE PipeOpenRead(PPIPE pipe) {
 	// To implement: add open for read logic here
 	printf("PipeOpenRead just partially implemented!\n");
-	//TODO wait escritor
+	
 	SetEvent(pipe->waitReaders);
+	
 	EnterCriticalSection(&pipe->cs);
 	pipe->nReaders++;
 	LeaveCriticalSection(&pipe->cs);
@@ -214,8 +234,9 @@ HANDLE PipeOpenRead(PPIPE pipe) {
 HANDLE PipeOpenWrite(PPIPE pipe) {
 	// To implement: add open for read logic here 
 	printf("PipeOpenWrite just partially implemented!\n");
-	//TODO wait por leitor
+	
 	SetEvent(pipe->waitWriters);
+	
 	EnterCriticalSection(&pipe->cs);
 	pipe->nWriters++;
 	LeaveCriticalSection(&pipe->cs);
@@ -228,23 +249,24 @@ HANDLE PipeOpenWrite(PPIPE pipe) {
  * the pipe is destroyed when there no readers nor writers.
  *-------------------------------------------------------------*/
 VOID PipeClose(HANDLE h) {
-	// To implement 
 	printf("PipeClose not implemented!\n");
 	
 	PPIPE_HANDLE p = (PPIPE_HANDLE)h;
 	EnterCriticalSection(&p->pipe->cs);
 	if (p->mode == PIPE_READ){
 		p->pipe->nReaders--;
-		//LeaveCriticalSection(&p->pipe->cs);
 	}else
 		if (p->mode == PIPE_WRITE) {
 			p->pipe->nWriters--;	
-			//LeaveCriticalSection(&p->pipe->cs);
 		}
-	//EnterCriticalSection(&p->pipe->cs);
+	
 	if (p->pipe->nReaders == 0 && p->pipe->nWriters == 0) {
 		LeaveCriticalSection(&p->pipe->cs);
 		PipeDestroy(p->pipe);
 	}
+	if (p->pipe->nReaders ==0)
+		ResetEvent(p->pipe->waitReaders);
+	if (p->pipe->nWriters == 0)
+		ResetEvent(p->pipe->waitWriters);
 	LeaveCriticalSection(&p->pipe->cs);
 }

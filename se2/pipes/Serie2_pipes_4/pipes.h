@@ -22,8 +22,16 @@ typedef struct pipe {
 
 	HANDLE hasElems, hasSpace;
 	HANDLE waitWriters, waitReaders, mutex;
+	PIPE_SHARED pshared;
 } PIPE, *PPIPE;
 
+
+typedef struct pipe_shared {
+	
+	BYTE buffer[BUFFER_SIZE];	// (circular) data buffer
+
+
+} PIPE_SHARED, *PPIPE_SHARED;
 
 PIPESSERIE2_API
 DWORD PipeRead(HANDLE p, PVOID pbuf, INT toRead);
