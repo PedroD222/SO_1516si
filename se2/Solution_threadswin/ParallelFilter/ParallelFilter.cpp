@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #define NPROCS 4
+#define NELEMSLIST 5
 
 typedef BOOL(*Filter)(VOID *item);
 typedef struct ListNode {
@@ -18,6 +19,8 @@ typedef struct Args {
 } Args, * PArgs;
 
 PArgs  args;
+
+
 
 HANDLE threads[NPROCS];
 
@@ -64,22 +67,42 @@ int ParallelFilterCount(ListNode *head, Filter filter) {
 		CloseHandle(threads[i]);
 	}
 	DeleteCriticalSection(&cs);
-	return args->elemPredicate;;
+	return args->elemPredicate;
 }
 
 BOOL IsOdd(VOID * item) {
-	return TRUE;
+	int n = (int)item;
+	return n % 2;
+}
+
+VOID testParallel() {
+	ListNode * head; 
+	int numbers[NELEMSLIST];
+	int expected = 0;
+	ListNode * aux = (ListNode*)malloc(sizeof(ListNode));
+	head = aux;
+
+	for (int i = 0; i < NELEMSLIST; i++) {
+		numbers[i] = i;
+		if (IsOdd((void *)numbers[i]))
+			expected++;
+		aux->val = (void *)numbers[i];
+		aux->next = (ListNode*)malloc(sizeof(ListNode));
+	
+		if (i<NELEMSLIST-1)
+			aux = aux->next;
+	}
+	aux->next = NULL;
+	int odd = ParallelFilterCount(head, IsOdd);
+	if (odd == expected)
+		printf("Test PASSED");
+	else 
+		printf("Test FAILED");
 }
 
 int main()
 {
-	ListNode * head = (ListNode*)malloc(sizeof(ListNode));
-	head->val = (void *)1;
-	ListNode * aux = (ListNode*)malloc(sizeof(ListNode));
-	aux->val = (void *)3;
-	aux->next = NULL;
-	head->next = aux;
-	ParallelFilterCount(head, IsOdd);
+	testParallel();
 	getchar();
     return 0;
 }
