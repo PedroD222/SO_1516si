@@ -6,7 +6,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	PPIPE pipe = 
+	PPIPE pipe = PipeOpenRead(NULL);
 	return 0;
 }
 

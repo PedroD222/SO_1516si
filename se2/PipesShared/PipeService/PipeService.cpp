@@ -19,19 +19,25 @@ typedef struct PipeHandle {
 
 static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
-	InitializeCriticalSection(&p->cs);
+	//InitializeCriticalSection(&p->cs);
 
+	
 
 	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), pipeServiceName);
 	if (p->mapHandle == NULL)
 		goto error;
 
+	p->procId = GetCurrentProcessId();
+
 	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_WRITE, 0, 0, 0);
 	if (p->shared == NULL)
 		goto error;
 
-	p->nReaders = p->nWriters = p->idxGet = p->idxPut = p->nBytes = 0;
+	p->nReaders = p->nWriters = 0;
+	p->shared->idxGet = p->shared->idxPut = p->shared->nBytes = 0;
 
+	if ((p->mtx = CreateMutex(NULL, FALSE, _T("PipeMutex"))) == NULL)
+		goto error;
 	if ((p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T("fullPipeEv"))) == NULL)
 		goto error;
 	if ((p->hasElems = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"))) == NULL)
@@ -76,6 +82,8 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 }
 
 
+HANDLE PipeOpenWrite(){}
+
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 
 	PPIPE_SHARED shared = p->shared;
@@ -107,6 +115,12 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	PPIPE pipe = (PPIPE)malloc(sizeof(PIPE));
 	if (pipe == NULL)
 		return NULL;
+
+	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, pipeServiceName);
+	if (pipe->mapHandle == NULL)
+		return NULL;
+
+	if ((pipe->))
 
 	if (!DuplicateHandle())
 

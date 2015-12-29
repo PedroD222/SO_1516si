@@ -29,11 +29,14 @@ typedef struct pipe_shared {
 } PIPE_SHARED, *PPIPE_SHARED;
 
 typedef struct pipe{
-
-
+	DWORD procId;
+	DWORD nReaders, nWriters;
 	HANDLE mtx;
 	HANDLE hasData, hasSpace;
 	HANDLE mapHandle;
 	PPIPE_SHARED shared;
 
 } PIPE, *PPIPE;
+
+
+HANDLE PipeOpenRead(TCHAR *pipeServiceName);
