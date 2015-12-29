@@ -320,6 +320,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	PipeTest_OneClient_OneServer();
 	PipeTest_TwoClients_OneServer();
 	PipeTest_Stream();
+	getchar();
 	return 0;
 }
 
