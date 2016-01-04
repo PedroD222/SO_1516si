@@ -424,6 +424,7 @@ HANDLE UtCreate32(UT_FUNCTION Function, UT_ARGUMENT Argument, PUCHAR name, DWORD
 	// Ready the thread.
 	//
 	NumberOfThreads += 1;
+	Thread->State = READY;
 	UtActivate((HANDLE)Thread);
 
 
@@ -533,7 +534,7 @@ HANDLE UtCreate64(UT_FUNCTION Function, UT_ARGUMENT Argument, PUCHAR name, DWORD
 	//
 	Thread->Function = Function;
 	Thread->Argument = Argument;
-
+	Thread->State = READY;
 	//
 	// Map an UTHREAD_CONTEXT instance on the thread's stack.
 	// We'll use it to save the initial context of the thread.
