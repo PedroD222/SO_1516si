@@ -50,7 +50,7 @@ UINT WINAPI PartialFilter(LPVOID arg) {
 int ParallelFilterCount(ListNode *head, Filter filter) {
 	SYSTEM_INFO si;
 	GetSystemInfo(&si);
-	DWORD nprocs = si.dwNumberOfProcessors;
+	int nprocs = si.dwNumberOfProcessors;
 	InitializeCriticalSection(&cs);
 	DWORD total = 0;
 	ListNode * l = head;
@@ -76,14 +76,15 @@ BOOL IsOdd(VOID * item) {
 }
 
 VOID testParallel() {
-	ListNode * head; 
+	ListNode * head;
+	
 	int numbers[NELEMSLIST];
 	int expected = 0;
 	ListNode * aux = (ListNode*)malloc(sizeof(ListNode));
 	head = aux;
 
 	for (int i = 0; i < NELEMSLIST; i++) {
-		numbers[i] = i;
+		 numbers[i] = i;
 		if (IsOdd((void *)numbers[i]))
 			expected++;
 		aux->val = (void *)numbers[i];
@@ -94,10 +95,11 @@ VOID testParallel() {
 	}
 	aux->next = NULL;
 	int odd = ParallelFilterCount(head, IsOdd);
+	printf("--------------------------------------\n");
 	if (odd == expected)
-		printf("Test PASSED");
+		printf("TEST PASSED!!\n");
 	else 
-		printf("Test FAILED");
+		printf("TEST FAILED!!\n");
 }
 
 int main()
