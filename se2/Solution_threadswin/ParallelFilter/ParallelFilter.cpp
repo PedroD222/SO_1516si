@@ -30,19 +30,25 @@ UINT WINAPI PartialFilter(LPVOID arg) {
 	PArgs args = (PArgs )arg;
 	ListNode * aux;
 	for (;;) {
-		EnterCriticalSection(&cs);
-		aux = args->head;
-		/*
-		test aux in exclusion because head maybe null
-		when head = head->next
-		*/
-		if (aux == NULL) {
+		/*EnterCriticalSection(&cs);
+		aux = args->head;*/
+		//test aux in exclusion because head maybe null
+		//when head = head->next
+		/*if (aux == NULL) {
 			LeaveCriticalSection(&cs);
-			
+			return 0;
+		}
+		args->head = args->head->next;
+		LeaveCriticalSection(&cs);*/
+		aux = args->head;
+		EnterCriticalSection(&cs);
+		if (args->head == NULL) {
+			LeaveCriticalSection(&cs);
 			return 0;
 		}
 		args->head = args->head->next;
 		LeaveCriticalSection(&cs);
+
 		if (args->filter(aux->val))
 			InterlockedIncrement( &args->elemPredicate);
 	}
