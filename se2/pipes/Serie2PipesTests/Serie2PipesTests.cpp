@@ -229,7 +229,8 @@ VOID PipeTest_OneClient_OneServer() {
 BOOL CheckMessageTest3(MESSAGE m) {
 	char c = m[0];
 	for (INT i = 1; i < MSG_SIZE; ++i) {
-		if (m[i] != c) return FALSE;
+		if (m[i] != c) 
+			return FALSE;
 	}
 	return TRUE;
 }

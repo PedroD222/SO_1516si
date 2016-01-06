@@ -32,7 +32,7 @@ static PPIPE_HANDLE PHCreate(PPIPE pipe, SHORT mode) {
 
 // pipe resources release 
 static VOID PipeDestroy(PPIPE p) {
-	printf("PipeDestroy not implemented!\n");
+//	printf("PipeDestroy not implemented!\n");
 	if (p->hasElems != NULL)
 		CloseHandle(p->hasElems);
 	if (p->hasSpace != NULL)
@@ -124,6 +124,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	//printf("PipeWriteInternal not implemented!\n");
 
 	WaitForSingleObject(p->hasSpace, INFINITE);
+
 	int can_write_atomic = toWrite- ATOMIC_RW;
 
 	EnterCriticalSection(&p->cs);
