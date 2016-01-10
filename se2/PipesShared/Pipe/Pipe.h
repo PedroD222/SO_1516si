@@ -1,16 +1,22 @@
-#pragma once
-
-
-#ifdef PIPESSERIE2_EXPORTS
-#define PIPESSERIE2_API _declspec(dllexport)
+// The following ifdef block is the standard way of creating macros which make exporting 
+// from a DLL simpler. All files within this DLL are compiled with the PIPE_EXPORTS
+// symbol defined on the command line. This symbol should not be defined on any project
+// that uses this DLL. This way any other project whose source files include this file see 
+// PIPE_API functions as being imported from a DLL, whereas this DLL sees symbols
+// defined with this macro as being exported.
+#ifdef PIPE_EXPORTS
+#define PIPE_API __declspec(dllexport)
 #else
-#define PIPESSERIE2_API _declspec(dllimport)
+#define PIPE_API __declspec(dllimport)
 #endif
-
 
 // pipe public definitions
 #define BUFFER_SIZE		256
 #define ATOMIC_RW		100		// max message size for guaranteed write atomicity
+
+
+
+
 
 
 
@@ -33,11 +39,14 @@ typedef struct pipe{
 	DWORD mode;
 } PIPE, *PPIPE;
 
-PIPESSERIE2_API
+PIPE_API
 HANDLE PipeOpenRead(TCHAR *pipeServiceName);
 
-PIPESSERIE2_API
-PPIPE PipeCreate(TCHAR *pipeServiceName);
-DWORD PipeRead(HANDLE h, PVOID pbuf, INT toRead);
+PIPE_API
+HANDLE PipeOpenWrite(TCHAR *pipeServiceName);
 
-DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite);
+PIPE_API
+PPIPE PipeCreate(TCHAR *pipeServiceName);
+
+PIPE_API
+PPIPE PipeWrite(TCHAR *pipeServiceName);

@@ -1,9 +1,11 @@
-// PipeService.cpp : Defines the exported functions for the DLL application.
+// Pipe.cpp : Defines the exported functions for the DLL application.
 //
 
 #include "stdafx.h"
-#include "PipeService.h"
+#include "Pipe.h"
 
+
+#include "stdafx.h"
 
 #define PIPE_READ 1
 #define PIPE_WRITE 2
@@ -27,15 +29,15 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
 	//InitializeCriticalSection(&p->cs);
 
-	
+
 
 	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), pipeServiceName);
 	if (p->mapHandle == NULL)
 		goto error;
 
-	
 
-	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_WRITE, 0, 0, 0);
+
+	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	if (p->shared == NULL)
 		goto error;
 
@@ -50,9 +52,9 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 		goto error;
 	if ((p->shared->hasData = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL)
 		goto error;
-	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
+	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
 		goto error;
-	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
+	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
 		goto error;
 	return;
 error:
@@ -96,8 +98,32 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 	PPIPE pipe = (PPIPE)malloc(sizeof(PIPE));
 	if (pipe == NULL)
 		return NULL;
+	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, pipeServiceName);
+	if (pipe->mapHandle == NULL)
+		return NULL;
 
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
+		return NULL;
 
+	WaitForSingleObject(pipe->shared->mtx, INFINITE);
+	
+	if ((pipe->shared->waitReaders = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
+
+	if ((pipe->shared->waitWriters = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
+
+	SetEvent(pipe->shared->waitWriters);
+	pipe->shared->nWriters += 1;
+	ReleaseMutex(pipe->shared->mtx);
+	pipe->mode = PIPE_WRITE;
+	DWORD val = WaitForSingleObject(pipe->shared->waitReaders, INFINITE);
+	DWORD err = GetLastError();
+	return pipe;
 }
 
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
@@ -139,16 +165,16 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
 		return NULL;
 
-	if (!OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK)))
+	if ((pipe->shared->mtx = OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
 		return NULL;
 
 	WaitForSingleObject(pipe->shared->mtx, INFINITE);
-	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))){
+	if ((pipe->shared->waitReaders = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
 		ReleaseMutex(pipe->shared->mtx);
 		return NULL;
 	}
 
-	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))){
+	if ((pipe->shared->waitWriters = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
 		ReleaseMutex(pipe->shared->mtx);
 		return NULL;
 	}
@@ -156,6 +182,7 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	SetEvent(pipe->shared->waitReaders);
 	pipe->shared->nReaders += 1;
 	ReleaseMutex(pipe->shared->mtx);
+	pipe->mode = PIPE_READ;
 	WaitForSingleObject(pipe->shared->waitWriters, INFINITE);
 	return pipe;
 }

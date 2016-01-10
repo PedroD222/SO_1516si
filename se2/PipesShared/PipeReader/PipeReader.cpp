@@ -2,11 +2,12 @@
 //
 
 #include "stdafx.h"
-#include "../PipeService/PipeService.h"
+#include "../Pipe/Pipe.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	PPIPE pipe = PipeOpenRead(NULL);
+	//PPIPE create = PipeCreate(_T("pipe"));
+	HANDLE pipe = PipeOpenRead(_T("pipe"));
 	return 0;
 }
 
