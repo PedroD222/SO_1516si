@@ -186,27 +186,11 @@ BOOL UtJoin(HANDLE thread){
 	return TRUE;
 }
 
-FLOAT UtStackUsage(HANDLE thread){
+INT UtThreadState(HANDLE thread){
 	PUTHREAD t = (PUTHREAD)thread;
-	FLOAT semRes;
-	semRes = (FLOAT)((sizeof(UTHREAD_CONTEXT)+sizeof(ULONG))) / (FLOAT)t->StackSz;
-	return semRes * 100;
+	return t->State;
 }
 
-
-VOID UtDump(){
-	PLIST_ENTRY curr = AliveQueue.Flink;
-	FLOAT perc;
-	while (curr != &AliveQueue){
-		PUTHREAD t = CONTAINING_RECORD(curr, UTHREAD, AliveLink);
-		//_tprintf(T("Handle: %p ---- Name: %s \n",*t,t->Name));
-		printf("Handle: %p ---- Name: %s \n", t, t->Name);
-		printf("State: %s \n", t->State);
-		perc = UtStackUsage(t);
-		printf("Stack filled percentage: %.4f \n",perc);
-		curr = curr->Flink;
-	}
-}
 
 
 //

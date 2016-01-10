@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2BBAD3F3-4AC4-4F66-A191-223F94E22459}</ProjectGuid>
+    <ProjectGuid>{502C8891-E0A0-400D-8CD6-4F4B283D5849}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>PipePoster</RootNamespace>
+    <RootNamespace>PipeObj</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -83,7 +83,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PipePoster.cpp" />
+    <ClCompile Include="PipeObj.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

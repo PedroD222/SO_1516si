@@ -69,7 +69,8 @@ typedef struct _UTHREAD {
 	UT_ARGUMENT      Argument; 
 	PUCHAR           Stack;
 	UINT			 StackSz;
-	LPSTR			 State;
+	//LPSTR			 State;
+	INT				 State;
 	LPSTR			 Name;
 } UTHREAD, *PUTHREAD;
 
@@ -86,6 +87,6 @@ typedef struct _UTHREAD {
 //
 // The possible states of a user thread
 //
-#define RUNNING "RUNNING"
-#define READY "READY"
-#define BLOCKED "BLOCKED"
+#define RUNNING 1
+#define READY 2
+#define BLOCKED 3

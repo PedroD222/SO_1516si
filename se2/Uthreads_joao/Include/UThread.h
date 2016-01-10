@@ -82,9 +82,6 @@ VOID UtExit ();
 
 
 
-UTHREAD_API
-VOID UtDump();
-
 //
 // Relinquishes the processor to the first user thread in the ready queue.
 // If there are no ready threads, the function returns immediately.
@@ -113,6 +110,9 @@ VOID UtActivate (HANDLE ThreadHandle);
 
 UTHREAD_API
 BOOL UtJoin(HANDLE ThreadHandle);
+
+UTHREAD_API
+INT UtThreadState(HANDLE thread);
 
 #ifdef __cplusplus
 } // extern "C"
