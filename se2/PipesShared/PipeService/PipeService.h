@@ -13,10 +13,6 @@
 
 
 
-
-
-
-
 typedef struct pipe_shared {
 	INT nReaders, nWriters;		// Number of readers and writers 
 	// (used among other reasons for pipe lifetime)
@@ -24,7 +20,6 @@ typedef struct pipe_shared {
 	BYTE buffer[BUFFER_SIZE];	// (circular) data buffer
 	INT idxGet, idxPut;			// R/W indexes
 	INT nBytes;					// Avaiable bytes;
-
 
 } PIPE_SHARED, *PPIPE_SHARED;
 
@@ -35,8 +30,14 @@ typedef struct pipe{
 	HANDLE hasData, hasSpace;
 	HANDLE mapHandle;
 	PPIPE_SHARED shared;
-
+	//events of has readers and writers
 } PIPE, *PPIPE;
 
 
 HANDLE PipeOpenRead(TCHAR *pipeServiceName);
+
+HANDLE PipeOpenWrite();
+
+DWORD PipeRead(HANDLE h, PVOID pbuf, INT toRead);
+
+DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite);

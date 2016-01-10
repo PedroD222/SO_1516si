@@ -40,7 +40,7 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 		goto error;
 	if ((p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T("fullPipeEv"))) == NULL)
 		goto error;
-	if ((p->hasElems = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"))) == NULL)
+	if ((p->hasData = CreateEvent(NULL, TRUE, FALSE, _T("EmptyPipeEv"))) == NULL)
 		goto error;
 	if ((p->waitReaders = CreateEvent(NULL, TRUE, TRUE, _T("WaitReaders"))) == NULL)
 		goto error;
@@ -57,7 +57,7 @@ error:
 *----------------------------------------------*/
 PPIPE PipeCreate(TCHAR *pipeServiceName) {
 	PPIPE pres = (PPIPE)malloc(sizeof(PIPE));
-	PipeInit(pres);
+	PipeInit(pres, pipeServiceName);
 	return pres;
 }
 
