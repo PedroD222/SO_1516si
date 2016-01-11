@@ -79,6 +79,8 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	WaitForSingleObject(p->hasElems, INFINITE);
 	
 	int can_read_atomic = toRead - ATOMIC_RW;
+	/*
+	*before for(;;){...}
 	EnterCriticalSection(&p->cs);
 	int hasbytes_atomic = (p->nBytes - ATOMIC_RW);
 	int can_read = (p->nBytes - toRead);
@@ -95,7 +97,23 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 			can_read = p->nBytes - toRead;
 			LeaveCriticalSection(&p->cs);
 		}
-	EnterCriticalSection(&p->cs);
+	EnterCriticalSection(&p->cs);*/
+
+	for (;;) {
+		EnterCriticalSection(&p->cs);
+		/*TODO
+		if (BUFFER_SIZE - p->nBytes >= toWrite) {
+			LeaveCriticalSection(&p->cs);
+			break;
+		}
+
+		if (BUFFER_SIZE - p->nBytes >= ATOMIC_RW) {
+			LeaveCriticalSection(&p->cs);
+			break;
+		}*/
+		LeaveCriticalSection(&p->cs);
+	}
+
 	int byteread =0;
 	BYTE pb[BUFFER_SIZE];
 	
@@ -127,11 +145,27 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 
 	int can_write_atomic = toWrite- ATOMIC_RW;
 
+	for (;;) {
+		EnterCriticalSection(&p->cs);
+		if (BUFFER_SIZE - p->nBytes >= toWrite) {
+			LeaveCriticalSection(&p->cs);
+			break;
+		}
+			
+		if (BUFFER_SIZE - p->nBytes >= ATOMIC_RW) {
+			LeaveCriticalSection(&p->cs);
+			break;
+		}
+		LeaveCriticalSection(&p->cs);
+	}
+
+	/*
+	* before for(;;){...}
+
 	EnterCriticalSection(&p->cs);
 	int hasSpace_atomicW = (ATOMIC_RW + p->nBytes); 
 	int can_write = (p->nBytes + toWrite);
 	LeaveCriticalSection(&p->cs);
-
 	if (can_write_atomic > 0)
 		while (hasSpace_atomicW > BUFFER_SIZE) {
 			EnterCriticalSection(&p->cs);
@@ -144,6 +178,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 			can_write = (p->nBytes + toWrite);
 			LeaveCriticalSection(&p->cs);
 		}
+		*/
 	
 	EnterCriticalSection(&p->cs);
 	int bytewrite = 0;
