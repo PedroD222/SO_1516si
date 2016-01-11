@@ -37,7 +37,16 @@ PIPESSERIE2_API
 HANDLE PipeOpenRead(TCHAR *pipeServiceName);
 
 PIPESSERIE2_API
+HANDLE PipeOpenWrite(TCHAR *pipeServiceName);
+
+PIPESSERIE2_API
 PPIPE PipeCreate(TCHAR *pipeServiceName);
+
+PIPESSERIE2_API
 DWORD PipeRead(HANDLE h, PVOID pbuf, INT toRead);
 
+PIPESSERIE2_API
 DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite);
+
+PIPESSERIE2_API
+VOID PipeClose(HANDLE h);

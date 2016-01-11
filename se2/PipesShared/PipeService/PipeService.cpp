@@ -77,19 +77,50 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	WaitForSingleObject(shared->hasSpace, INFINITE);
 	int largerThanAtomic = toWrite - ATOMIC_RW;
 
-	if (largerThanAtomic > 0){
+	for (;;) {
+		WaitForSingleObject(shared->mtx, INFINITE);
+		if (BUFFER_SIZE - shared->nBytes >= toWrite) {
+			ReleaseMutex(shared->mtx);
+			break;
+		}
 
+		if (BUFFER_SIZE - shared->nBytes >= ATOMIC_RW) {
+			ReleaseMutex(shared->mtx);
+			break;
+		}
+		ReleaseMutex(shared->mtx);
 	}
-	else{
-
-	}
-
+	int byteWrite = 0;
+	PBYTE pb = (PBYTE)pbuf;
 
 	WaitForSingleObject(shared->mtx, INFINITE);
 
+	while (byteWrite < ATOMIC_RW && shared->nBytes < BUFFER_SIZE && byteWrite<toWrite) {
+		shared->buffer[shared->idxPut] = *(pb + byteWrite);
+		byteWrite++;
+		shared->idxPut = (++shared->idxPut) % BUFFER_SIZE;
+		shared->nBytes++;
+	}
+
+	if (shared->nBytes >= 1) {
+		SetEvent(shared->hasData);
+	}
+	if (shared->nBytes == BUFFER_SIZE) {
+		ResetEvent(shared->hasSpace);
+	}
+	ReleaseMutex(shared->mtx);
+
+	if (largerThanAtomic > 0)
+		return byteWrite + PipeWriteInternal(p, pb + byteWrite, largerThanAtomic);
+	return byteWrite;
 
 }
 
+DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite) {
+	PPIPE_HANDLE ph = (PPIPE_HANDLE)h;
+
+	return PipeWriteInternal(ph->pipe, pbuf, toWrite);
+}
 
 HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 	HANDLE procHandle = NULL;
@@ -97,7 +128,32 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 	if (pipe == NULL)
 		return NULL;
 
+	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, pipeServiceName);
+	if (pipe->mapHandle == NULL)
+		return NULL;
 
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
+		return NULL;
+
+	if (!OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK)))
+		return NULL;
+
+	WaitForSingleObject(pipe->shared->mtx, INFINITE);
+	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))) {
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
+
+	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) {
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
+
+	SetEvent(pipe->shared->waitWriters);
+	pipe->shared->nWriters += 1;
+	ReleaseMutex(pipe->shared->mtx);
+	WaitForSingleObject(pipe->shared->waitReaders, INFINITE);
+	return pipe;
 }
 
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
@@ -111,6 +167,42 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 	}
 	WaitForSingleObject(shared->hasData, INFINITE);
 
+	int can_read_atomic = toRead - ATOMIC_RW;
+	
+	for (;;) {
+		WaitForSingleObject(shared->mtx, INFINITE);
+		if (shared->nBytes - ATOMIC_RW >= 0) {
+			ReleaseMutex(shared->mtx);
+			break;
+		}
+		if (shared->nBytes - toRead >= 0) {
+			ReleaseMutex(shared->mtx);
+			break;
+		}
+		ReleaseMutex(shared->mtx);
+	}
+
+	int byteRead = 0;
+	BYTE pb[BUFFER_SIZE];
+	WaitForSingleObject(shared->mtx, INFINITE);
+	while (byteRead< toRead && byteRead < shared->nBytes && byteRead<ATOMIC_RW) {
+		pb[byteRead++] = shared->buffer[shared->idxGet];
+		shared->idxGet = (++shared->idxGet) % BUFFER_SIZE;
+	}
+	memcpy(pbuf, pb, byteRead);
+
+	shared->nBytes = shared->nBytes - byteRead;
+
+	if (shared->nBytes < BUFFER_SIZE)
+		SetEvent(shared->hasSpace);
+	if (shared->nBytes == 0) {
+		ResetEvent(shared->hasData);
+	}
+	ReleaseMutex(shared->mtx);
+
+	if (can_read_atomic > 0)
+		return byteRead + PipeReadInternal(p, pb + byteRead, can_read_atomic);
+	return byteRead;
 }
 
 
@@ -152,7 +244,7 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 		ReleaseMutex(pipe->shared->mtx);
 		return NULL;
 	}
-
+	//TODO open events hasData and Hasspace
 	SetEvent(pipe->shared->waitReaders);
 	pipe->shared->nReaders += 1;
 	ReleaseMutex(pipe->shared->mtx);
