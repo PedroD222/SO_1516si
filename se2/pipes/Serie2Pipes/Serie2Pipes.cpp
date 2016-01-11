@@ -97,26 +97,23 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 			can_read = p->nBytes - toRead;
 			LeaveCriticalSection(&p->cs);
 		}
-	EnterCriticalSection(&p->cs);*/
-
+	*/
 	for (;;) {
-		EnterCriticalSection(&p->cs);
-		/*TODO
-		if (BUFFER_SIZE - p->nBytes >= toWrite) {
+		EnterCriticalSection(&p->cs);	
+		if (p->nBytes - ATOMIC_RW >= 0) {
 			LeaveCriticalSection(&p->cs);
 			break;
 		}
-
-		if (BUFFER_SIZE - p->nBytes >= ATOMIC_RW) {
+		if (p->nBytes-toRead >= 0) {
 			LeaveCriticalSection(&p->cs);
 			break;
-		}*/
+		}
 		LeaveCriticalSection(&p->cs);
 	}
 
 	int byteread =0;
 	BYTE pb[BUFFER_SIZE];
-	
+	EnterCriticalSection(&p->cs);
 	while (byteread< toRead && byteread < p->nBytes && byteread<ATOMIC_RW) {
 		pb[byteread++] = p->buffer[p->idxGet];
 		p->idxGet = (++p->idxGet) % BUFFER_SIZE;
