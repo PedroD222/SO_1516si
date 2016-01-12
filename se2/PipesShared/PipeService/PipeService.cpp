@@ -252,8 +252,49 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	return pipe;
 }
 
+VOID PipeClose(HANDLE h) {
+	PPIPE pipe = (PPIPE)h;
+	PPIPE_SHARED shared = pipe->shared;
 
+	WaitForSingleObject(shared->mtx, INFINITE);
+	if (pipe->mode == PIPE_READ) {
+		shared->nReaders--;
+	}else
+		if (pipe->mode == PIPE_WRITE) {
+			shared->nWriters--;
+		}
 
+	if (shared->nWriters == 0 && shared->nReaders == 0) {
+		ReleaseMutex(shared->mtx);
+		PipeDestroy(pipe);
+		return;
+	}
+	if (shared->nReaders == 0)
+		ResetEvent(shared->waitReaders);
+	if (shared->nWriters == 0)
+		ResetEvent(shared->waitWriters);
+	ReleaseMutex(shared->mtx);
+}
+
+VOID PipeDestroy(PPIPE pipe) {
+	PPIPE_SHARED shared = pipe->shared;
+
+	if (shared->hasData != NULL)
+		CloseHandle(shared->hasData);
+	if (shared->hasSpace != NULL)
+		CloseHandle(shared->hasSpace);
+	if (shared->waitReaders != NULL)
+		CloseHandle(shared->waitReaders);
+	if (shared->waitWriters != NULL)
+		CloseHandle(shared->waitWriters);
+
+	if (UnmapViewOfFile(pipe->mapHandle) == 0)
+		return;
+
+	free(pipe->shared);
+	free(pipe);
+}
+ 
 //static PPIPE_HANDLE PHCreate(PPIPE pipe, SHORT mode) {
 //	PPIPE_HANDLE phandle = (PPIPE_HANDLE)malloc(sizeof(PIPE_HANDLE));
 //	phandle->mode = mode;
