@@ -80,12 +80,12 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	for (;;) {
 		WaitForSingleObject(shared->mtx, INFINITE);
 		if (BUFFER_SIZE - shared->nBytes >= toWrite) {
-			ReleaseMutex(shared->mtx);
+			//ReleaseMutex(shared->mtx);
 			break;
 		}
 
 		if (BUFFER_SIZE - shared->nBytes >= ATOMIC_RW) {
-			ReleaseMutex(shared->mtx);
+			//ReleaseMutex(shared->mtx);
 			break;
 		}
 		ReleaseMutex(shared->mtx);
@@ -93,8 +93,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	int byteWrite = 0;
 	PBYTE pb = (PBYTE)pbuf;
 
-	WaitForSingleObject(shared->mtx, INFINITE);
-
+	//WaitForSingleObject(shared->mtx, INFINITE);
 	while (byteWrite < ATOMIC_RW && shared->nBytes < BUFFER_SIZE && byteWrite<toWrite) {
 		shared->buffer[shared->idxPut] = *(pb + byteWrite);
 		byteWrite++;
@@ -172,11 +171,11 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 	for (;;) {
 		WaitForSingleObject(shared->mtx, INFINITE);
 		if (shared->nBytes - ATOMIC_RW >= 0) {
-			ReleaseMutex(shared->mtx);
+			//ReleaseMutex(shared->mtx);
 			break;
 		}
 		if (shared->nBytes - toRead >= 0) {
-			ReleaseMutex(shared->mtx);
+			//ReleaseMutex(shared->mtx);
 			break;
 		}
 		ReleaseMutex(shared->mtx);
@@ -184,7 +183,7 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 
 	int byteRead = 0;
 	BYTE pb[BUFFER_SIZE];
-	WaitForSingleObject(shared->mtx, INFINITE);
+	//WaitForSingleObject(shared->mtx, INFINITE);
 	while (byteRead< toRead && byteRead < shared->nBytes && byteRead<ATOMIC_RW) {
 		pb[byteRead++] = shared->buffer[shared->idxGet];
 		shared->idxGet = (++shared->idxGet) % BUFFER_SIZE;

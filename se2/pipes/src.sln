@@ -7,8 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serie2Pipes", "Serie2Pipes\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serie2PipesTests", "Serie2PipesTests\Serie2PipesTests.vcxproj", "{18CE289E-1088-40C8-B74A-9F1E6E372052}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serie2_pipes_4", "Serie2_pipes_4\Serie2_pipes_4.vcxproj", "{58C525E4-0809-4ADB-9115-97573C797FD2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -29,14 +27,6 @@ Global
 		{18CE289E-1088-40C8-B74A-9F1E6E372052}.Release|Win32.ActiveCfg = Release|Win32
 		{18CE289E-1088-40C8-B74A-9F1E6E372052}.Release|Win32.Build.0 = Release|Win32
 		{18CE289E-1088-40C8-B74A-9F1E6E372052}.Release|x64.ActiveCfg = Release|Win32
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Debug|Win32.ActiveCfg = Debug|Win32
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Debug|Win32.Build.0 = Debug|Win32
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Debug|x64.ActiveCfg = Debug|x64
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Debug|x64.Build.0 = Debug|x64
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Release|Win32.ActiveCfg = Release|Win32
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Release|Win32.Build.0 = Release|Win32
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Release|x64.ActiveCfg = Release|x64
-		{58C525E4-0809-4ADB-9115-97573C797FD2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
