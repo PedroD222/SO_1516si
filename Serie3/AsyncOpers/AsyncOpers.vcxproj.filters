@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="AsyncOpers.cpp" />
+    <ClCompile Include="CompletionPort.cpp" />
+    <ClCompile Include="AsyncOpersTests.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="CopyFolderAsyncTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="FileCopyAsyncTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyFolderAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="FileCopyAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="ReadAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDumpAsyncTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDumpAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AsyncOpers.h" />
+    <ClInclude Include="CompletionPort.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="AsyncOpersTests.h">
+      <Filter>Tests</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{b3e70ec6-c989-439a-aa72-6ef6ff5e896d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Opers">
+      <UniqueIdentifier>{6af7e120-9133-4172-b578-d7407176fe3e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
