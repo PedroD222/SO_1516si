@@ -66,6 +66,8 @@ BOOL ReadAsync(PIOAsyncDev ah, LARGE_INTEGER offset, LPVOID buffer, DWORD length
 VOID CopyFolderAsync(LPCTSTR folderIn, LPCTSTR folderOut, PCallback cb, LPVOID ctx);
 BOOL FileDumpAsync(LPCTSTR file, PCallback cb, LPVOID ctx);
 
+BOOL WriteAsync(PIOAsyncDev asyncDev, LARGE_INTEGER offset, LPVOID buffer, DWORD length, PCallback cb, LPVOID ctx);
+
 // acessores
 
 FORCEINLINE

@@ -26,6 +26,12 @@
     <ClCompile Include="FileDumpAsync.cpp">
       <Filter>Opers</Filter>
     </ClCompile>
+    <ClCompile Include="WriteAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="WriteAsyncTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncOpers.h" />
