@@ -25,9 +25,6 @@ typedef struct PipeHandle {
 
 static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
-	//InitializeCriticalSection(&p->cs);
-
-	
 
 	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), pipeServiceName);
 	if (p->mapHandle == NULL)
@@ -50,9 +47,9 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 		goto error;
 	if ((p->shared->hasData = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL)
 		goto error;
-	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
+	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
 		goto error;
-	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
+	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
 		goto error;
 	return;
 error:
@@ -158,7 +155,7 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 
 	PPIPE_SHARED shared = p->shared;
-
+	printf("before mtx");
 	WaitForSingleObject(shared->mtx, INFINITE);
 	if (shared->nBytes == 0 && shared->nWriters == 0){
 		ReleaseMutex(shared->mtx);
@@ -180,7 +177,7 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 		}
 		ReleaseMutex(shared->mtx);
 	}
-
+	printf("to read");
 	int byteRead = 0;
 	BYTE pb[BUFFER_SIZE];
 	//WaitForSingleObject(shared->mtx, INFINITE);
@@ -213,7 +210,7 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 *--------------------------------------------------------------------*/
 DWORD PipeRead(HANDLE h, PVOID pbuf, INT toWrite) {
 	PPIPE_HANDLE ph = (PPIPE_HANDLE)h;
-
+	
 	return PipeReadInternal(ph->pipe, pbuf, toWrite);
 }
 
@@ -243,12 +240,39 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 		ReleaseMutex(pipe->shared->mtx);
 		return NULL;
 	}
-	//TODO open events hasData and Hasspace
+	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_DATA_EVENT))) {
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
+
+	if (!OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_SPACE_EVENT))) {
+		ReleaseMutex(pipe->shared->mtx);
+		return NULL;
+	}
 	SetEvent(pipe->shared->waitReaders);
 	pipe->shared->nReaders += 1;
 	ReleaseMutex(pipe->shared->mtx);
 	WaitForSingleObject(pipe->shared->waitWriters, INFINITE);
 	return pipe;
+}
+
+VOID PipeDestroy(PPIPE pipe) {
+	PPIPE_SHARED shared = pipe->shared;
+
+	if (shared->hasData != NULL)
+		CloseHandle(shared->hasData);
+	if (shared->hasSpace != NULL)
+		CloseHandle(shared->hasSpace);
+	if (shared->waitReaders != NULL)
+		CloseHandle(shared->waitReaders);
+	if (shared->waitWriters != NULL)
+		CloseHandle(shared->waitWriters);
+
+	if (UnmapViewOfFile(pipe->mapHandle) == 0)
+		return;
+
+	free(pipe->shared);
+	free(pipe);
 }
 
 VOID PipeClose(HANDLE h) {
@@ -273,25 +297,6 @@ VOID PipeClose(HANDLE h) {
 	if (shared->nWriters == 0)
 		ResetEvent(shared->waitWriters);
 	ReleaseMutex(shared->mtx);
-}
-
-VOID PipeDestroy(PPIPE pipe) {
-	PPIPE_SHARED shared = pipe->shared;
-
-	if (shared->hasData != NULL)
-		CloseHandle(shared->hasData);
-	if (shared->hasSpace != NULL)
-		CloseHandle(shared->hasSpace);
-	if (shared->waitReaders != NULL)
-		CloseHandle(shared->waitReaders);
-	if (shared->waitWriters != NULL)
-		CloseHandle(shared->waitWriters);
-
-	if (UnmapViewOfFile(pipe->mapHandle) == 0)
-		return;
-
-	free(pipe->shared);
-	free(pipe);
 }
  
 //static PPIPE_HANDLE PHCreate(PPIPE pipe, SHORT mode) {
