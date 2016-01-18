@@ -119,8 +119,47 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	return byteread;
 }
 
+static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
+	BOOL isAtomic = toWrite <= ATOMIC_RW;
+	WaitForSingleObject(p->hasSpace, INFINITE);
+	
+
+	for (;;){
+		EnterCriticalSection(&p->cs);
+		if (BUFFER_SIZE - p->nBytes >= toWrite)
+			break;
+		if (BUFFER_SIZE - p->nBytes >= ATOMIC_RW)
+			break;
+		LeaveCriticalSection(&p->cs);
+
+	}
+
+	int writeIdx = 0;
+	PBYTE pb = (PBYTE)pbuf;
+
+	while (writeIdx < ATOMIC_RW && p->nBytes < BUFFER_SIZE && writeIdx<toWrite) {
+		p->buffer[p->idxPut] = *(pb + writeIdx);
+		writeIdx++;
+		p->idxPut = (++p->idxPut) % BUFFER_SIZE;
+		p->nBytes++;
+	}
+	if(p->nBytes >= 1) {
+		SetEvent(p->hasElems);
+	}
+	if (p->nBytes == BUFFER_SIZE) {
+		ResetEvent(p->hasSpace);
+	}
+	LeaveCriticalSection(&p->cs);
+
+	if (!isAtomic)
+		return writeIdx + PipeWriteInternal(p, pb + writeIdx, toWrite - ATOMIC_RW);
+	return writeIdx;
+}
+
+
 // pipe write internal operation
-static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
+/*
+static DWORD PipeWriteInternalOLD(PPIPE p, PVOID pbuf, INT toWrite) {
 	//printf("PipeWriteInternal not implemented!\n");
 
 	WaitForSingleObject(p->hasSpace, INFINITE);
@@ -165,10 +204,10 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite) {
 	LeaveCriticalSection(&p->cs);
 	
 	if (can_write_atomic > 0)
-		return bytewrite + PipeWriteInternal(p, pb+bytewrite, can_write_atomic);
+		return bytewrite + PipeWriteInternalOLD(p, pb+bytewrite, can_write_atomic);
 	return bytewrite;
 }
-
+*/
 
 /*------------------------------------------------------
  * Writes in a pipe via the handle returned from PipeOpenWrite.
