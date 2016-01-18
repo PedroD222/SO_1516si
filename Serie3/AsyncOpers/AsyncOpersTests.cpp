@@ -9,6 +9,7 @@
 
 VOID writeAsyncTest() {
 	LARGE_INTEGER offset = {0};
+	printf("TEST WRITE ASYNC\n");
 	WriteAsyncTest({ "Sistemas operativos - 15/16 si" }, 30, offset);
 }
 
@@ -22,6 +23,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//FileCopyAsyncTest(argv[1], argv[2]);
 	//FileDumpAsyncTest(argv[1]);
 	writeAsyncTest();
+	getchar();
 	return 0;
 }
 

@@ -14,8 +14,7 @@ VOID WriteCallback(PIOAsyncDev asyncDev, LPVOID ctx) {
 
 VOID WriteAsyncTest(LPVOID buffer, DWORD length, LARGE_INTEGER offset) {
 	HANDLE evtDone = CreateEvent(NULL, TRUE, FALSE, NULL);
-	PIOAsyncDev dev = (PIOAsyncDev)malloc(sizeof(IOAsyncDev));
-	
+	PIOAsyncDev dev = OpenAsync(_T("TestWriteAsync.txt"));
 	WriteAsync(dev, offset,buffer, length, WriteCallback, evtDone);
 	WaitForSingleObject(evtDone, INFINITE);
 	CloseHandle(evtDone);
