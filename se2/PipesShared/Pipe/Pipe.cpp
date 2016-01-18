@@ -195,3 +195,7 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 //	phandle->pipe = pipe;
 //	return phandle;
 //}
+
+
+
+
