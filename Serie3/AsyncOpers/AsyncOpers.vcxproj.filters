@@ -32,6 +32,12 @@
     <ClCompile Include="WriteAsyncTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="CopyFile2Async.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyFile2AsyncTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncOpers.h" />

@@ -62,6 +62,7 @@ VOID CloseAsync(PIOAsyncDev ah);
 
 
 VOID FileCopyAsync(LPCTSTR fileIn, LPCTSTR fileOut, PCallback cb, LPVOID ctx);
+BOOL CopyFile2Async(LPCTSTR file, LPCTSTR fileOut, PCallback cb, LPVOID ctx); 
 BOOL ReadAsync(PIOAsyncDev ah, LARGE_INTEGER offset, LPVOID buffer, DWORD length, PCallback cb, LPVOID ctx);
 VOID CopyFolderAsync(LPCTSTR folderIn, LPCTSTR folderOut, PCallback cb, LPVOID ctx);
 BOOL FileDumpAsync(LPCTSTR file, PCallback cb, LPVOID ctx);
