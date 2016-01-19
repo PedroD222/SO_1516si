@@ -41,6 +41,10 @@ VOID CopyFileAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 				OperSetError(op);
 				TerminateCopyFile(aop);
 			}
+			/*if (!WriteAsync(aop->adOut, { 0 }, aop->buffer, transferedBytes, aop->adOut->oper->userCb, aop->adOut->oper->uCtx)) {
+				OperSetError(op);
+				TerminateCopyFile(aop);
+			}*/
 		}
 	}
 	else {
@@ -50,6 +54,10 @@ VOID CopyFileAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 			TerminateCopyFile(aop);
 		}
 	}
+	/*if (!WriteAsync(aop->adOut, { 0 }, aop->buffer, transferedBytes, aop->adOut->oper->userCb, aop->adOut->oper->uCtx)) {
+		OperSetError(op);
+		TerminateCopyFile(aop);
+	}*/
 }
 
 VOID InitCopyFileOper(PCopyFileAsyncOper aop, PCallback cb, LPVOID uctx) {
@@ -71,17 +79,17 @@ BOOL CopyFile2Async(LPCTSTR file, // pathname do ficheiro origem
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}	
-	/*copyFileAsync->base.aHandle = origin;
-	origin->oper = &copyFileAsync->base;*/
+	copyFileAsync->base.aHandle = origin;
+	origin->oper = &copyFileAsync->base;
 	LARGE_INTEGER offset = { 0 };
-	if (!ReadAsync(origin, offset, copyFileAsync->buffer, CP_BUF_SIZE, cb, ctx)) {
+	if (!ReadAsync(copyFileAsync->base.aHandle, offset, copyFileAsync->buffer, CP_BUF_SIZE, cb, ctx)) {
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}
+	//copyFileAsync->base.aHandle->oper->transferedBytes
 	if (!WriteAsync(copyFileAsync->adOut, offset, copyFileAsync->buffer, CP_BUF_SIZE, cb, ctx)){
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}
-	TerminateCopyFile(copyFileAsync);
 	return TRUE;
 }
