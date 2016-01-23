@@ -98,6 +98,7 @@ VOID InitBase(PIOBaseOper aop, PIOAsyncDev ah, PCallback cb, LPVOID uctx, Comple
 	aop->uCtx = uctx;
 	aop->completeAction = ca;
 	aop->success = TRUE;
-	if (ah != NULL) ah->oper = aop;
+	if (ah != NULL) 
+		ah->oper = aop;
 	aop->transferedBytes = 0;
 }
