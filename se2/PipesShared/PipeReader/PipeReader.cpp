@@ -2,8 +2,8 @@
 //
 
 #include "stdafx.h"
-//#include "../Pipe/Pipe.h"
-#include "../PipeService/PipeService.h"
+#include "../Pipe/Pipe.h"
+//#include "../PipeService/PipeService.h"
 #include "../PipeObj/PipeObj.h"
 
 #define MSG_SIZE ATOMIC_RW

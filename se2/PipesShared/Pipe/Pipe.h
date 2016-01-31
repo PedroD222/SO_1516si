@@ -49,4 +49,10 @@ PIPE_API
 PPIPE PipeCreate(TCHAR *pipeServiceName);
 
 PIPE_API
-PPIPE PipeWrite(TCHAR *pipeServiceName);
+DWORD PipeWrite(HANDLE h, PVOID pbuf, INT toWrite);
+
+PIPE_API
+DWORD PipeRead(HANDLE h, PVOID pbuf, INT toWrite);
+
+PIPE_API
+VOID PipeClose(HANDLE h);

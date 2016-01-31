@@ -2,8 +2,8 @@
 //
 
 #include "stdafx.h"
-//#include "../Pipe/Pipe.h"
-#include "../PipeService/PipeService.h"
+#include "../Pipe/Pipe.h"
+//#include "../PipeService/PipeService.h"
 #include "../PipeObj/PipeObj.h"
 
 #define MSG_SIZE ATOMIC_RW
@@ -24,6 +24,7 @@ VOID FillMessage(MESSAGE m, char c) {
 
 UINT WINAPI ClientTest2(LPVOID arg) {
 	
+	//HANDLE p = PipeOpenWrite(NAMEPIPE);
 	HANDLE p = PipeOpenWrite(NAMEPIPE);
 	MESSAGE m;
 
