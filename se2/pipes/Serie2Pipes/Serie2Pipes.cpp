@@ -77,9 +77,8 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 	}
 	LeaveCriticalSection(&p->cs);
 	WaitForSingleObject(p->hasElems, INFINITE);
-	
 	int can_read_atomic = toRead - ATOMIC_RW;
-	EnterCriticalSection(&p->cs);
+	/*EnterCriticalSection(&p->cs);
 	int hasbytes_atomic = (p->nBytes - ATOMIC_RW);
 	int can_read = (p->nBytes - toRead);
 	LeaveCriticalSection(&p->cs);
@@ -95,7 +94,16 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead) {
 			can_read = p->nBytes - toRead;
 			LeaveCriticalSection(&p->cs);
 		}
-	EnterCriticalSection(&p->cs);
+	EnterCriticalSection(&p->cs);*/
+	for (;;) {
+		EnterCriticalSection(&p->cs);
+		if (p->nBytes - ATOMIC_RW >= 0)
+			break;
+		if (p->nBytes-toRead >= 0)
+			break;
+		LeaveCriticalSection(&p->cs);
+	}
+
 	int byteread =0;
 	BYTE pb[BUFFER_SIZE];
 	
