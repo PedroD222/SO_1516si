@@ -2,7 +2,7 @@
 
 #include "CompletionPort.h"
 
-
+#define CP_BUF_SIZE (4096*16)
 #define BUFFER_SIZE 256
 
 typedef struct iOBaseOper IOBaseOper, *PIOBaseOper;
@@ -21,9 +21,10 @@ typedef struct IOAsyncDev {
 	OVERLAPPED ovr;		// representa (para o windows) a operação de I/O em curso
 	HANDLE dev;			// handle para o ficheiro associado
 	PIOBaseOper oper;	// refere a operação em curso
-	/*fields for Op Readline
+	/*fields for Op Readline*/
 	BYTE buffer[CP_BUF_SIZE];
-	DWORD idRead, nSpaceAvailable;*/
+	DWORD idRead, nSpaceAvailable;
+	BOOL done;
 } IOAsyncDev, *PIOAsyncDev;
 
 

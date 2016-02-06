@@ -12,6 +12,7 @@ typedef struct ReadLineAsyncOper {
 	BYTE buffer[CP_BUF_SIZE];	// transfer buffer
 	CopyAction action;			// copy state
 	DWORD idRead, nSpaceAvailable;
+	HANDLE evtDone;
 } ReadLineAsyncOper, *PReadLineAsyncOper;
 
 // called for successful/unsuccessfull copy termination
@@ -60,20 +61,38 @@ VOID InitReadLineOper(PReadLineAsyncOper aop, PCallback cb, LPVOID uctx) {
 	aop->nSpaceAvailable = CP_BUF_SIZE;
 }
 
+VOID ReadLineCallback(PIOAsyncDev ah, LPVOID ctx) {
+	PReadLineAsyncOper readline = (PReadLineAsyncOper)ctx;
+
+	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
+	readline->nSpaceAvailable = readline->nSpaceAvailable - transferedBytes;
+	readline->idRead += transferedBytes;
+	for (DWORD i = 0; i < ah->idRead; i++) {
+		if (ah->buffer[i] == 10) {
+			ah->idRead = i;
+			ah->done = TRUE;
+			break;
+		}
+	}
+}
+
 VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx) {
 	assert(cb != NULL);
 	PReadLineAsyncOper aop = (PReadLineAsyncOper)malloc(sizeof(ReadLineAsyncOper));
 	InitReadLineOper(aop, cb, ctx);
-	DWORD szline = 256;
+	DWORD chartoread = 256;
+	DWORD szline = chartoread;
 	LARGE_INTEGER init = { 0 };
 	
-	HANDLE evtDone = CreateEvent(NULL, TRUE, FALSE, NULL);
+	aop->evtDone = CreateEvent(NULL, TRUE, FALSE, NULL);
+	//while (!dev->done) {
+		ReadAsync(dev, init, aop->buffer, szline, ReadLineCallback, aop);
+		szline += chartoread;
+	//}
 	
-	ReadAsync(dev, init, aop->buffer, szline, cb, ctx);
-	
-	WaitForSingleObject(evtDone, INFINITE);
-
+	//WaitForSingleObject(aop->evtDone, INFINITE);
+		cb(dev, ctx);
 	//line finish or no ???????
 
-	CloseHandle(evtDone);
+//	CloseHandle(aop->evtDone);
 }

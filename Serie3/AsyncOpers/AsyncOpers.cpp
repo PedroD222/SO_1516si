@@ -24,10 +24,14 @@ DWORD CtxGetTransferedBytes(LPVOID ctx) {
 	return aop->transferedBytes;
 }
 
-/*TODO
- CtxGetLine(LPVOID ctx) {
-	
-}*/
+PCHAR CtxGetLine(LPVOID ctx) {
+	PIOBaseOper op = (PIOBaseOper)ctx;
+	PCHAR line = (PCHAR)malloc(op->aHandle->idRead*sizeof(char));
+	for (DWORD i = 0; i < op->aHandle->idRead; i++) {
+		line[i] = op->aHandle->buffer[i];
+	}
+	return line;
+}
 
 // Device access creators
 
