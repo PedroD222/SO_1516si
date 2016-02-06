@@ -96,7 +96,20 @@ int _tmain(int argc, _TCHAR* argv[])
 	//PPIPE create = PipeCreate(_T("pipe"));
 	//HANDLE pipe = PipeOpenWrite(_T("pipe"));
 	//PPIPE create = PipeCreate(NAMEPIPE);
-	PipeTest_OneClient_OneServer();
+	//PipeTest_OneClient_OneServer();
+	HANDLE p = PipeOpenWrite(NAMEPIPE);
+	MESSAGE m;
+
+	char currchar = 'A';
+	// send NTRIES_TEST2 messages
+	for (int n = 0; n < NTRIES_TEST2; ++n) {
+		FillMessage(m, currchar);
+		if (currchar == 'Z') currchar = 'A';
+		else currchar++;
+
+		PipeWrite(p, m, MSG_SIZE);
+	}
+	PipeClose(p);
 	getchar();
 	return 0;
 }
