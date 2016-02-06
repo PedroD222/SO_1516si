@@ -3,8 +3,8 @@
 
 #include "stdafx.h"
 #include "PipeObj.h"
-//#include "../Pipe/Pipe.h"
-#include "../PipeService/PipeService.h"
+#include "../Pipe/Pipe.h"
+//#include "../PipeService/PipeService.h"
 
 HANDLE LaunchProcess(TCHAR *cmdLine) {
 	PROCESS_INFORMATION pi;

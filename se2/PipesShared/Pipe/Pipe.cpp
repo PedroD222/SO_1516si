@@ -18,44 +18,55 @@ typedef struct PipeHandle {
 	HANDLE mapHandle;
 } PIPE_HANDLE, *PPIPE_HANDLE;
 
-
-#define PIPE_MUTEX_LOCK "PipeMutex"
-#define PIPE_EVENT_WAITING_READERS "WaitReaders"
-#define PIPE_EVENT_WAITING_WRITERS "WaitWriters"
-#define PIPE_HAS_DATA_EVENT "EmptyPipeEv"
-#define PIPE_HAS_SPACE_EVENT "fullPipeEv"
+TCHAR szName[] = TEXT("PIPE");
+#define PIPE_MUTEX_LOCK "Global\\PipeMutex"
+#define PIPE_EVENT_WAITING_READERS "Global\\WaitReaders"
+#define PIPE_EVENT_WAITING_WRITERS "Global\\WaitWriters"
+#define PIPE_HAS_DATA_EVENT "Global\\EmptyPipeEv"
+#define PIPE_HAS_SPACE_EVENT "Global\\fullPipeEv"
 
 static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
 	//InitializeCriticalSection(&p->cs);
+	int err;
+	int sz = sizeof(PIPE_SHARED);
 
-
-
-	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), pipeServiceName);
+	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), szName);
 	if (p->mapHandle == NULL)
 		goto error;
+	err = GetLastError();
 
 
-
-	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED));
+	//int **addr = &(p->shared);
 	if (p->shared == NULL)
 		goto error;
-
+	err = GetLastError();
 	p->shared->procId = GetCurrentProcessId();
 
 	p->shared->nReaders = p->shared->nWriters = 0;
 	p->shared->idxGet = p->shared->idxPut = p->shared->nBytes = 0;
+	
+	SECURITY_DESCRIPTOR desc;
+	/*desc.
+	SECURITY_ATTRIBUTES secur;
+	secur.lpSecurityDescriptor = */
 
 	if ((p->shared->mtx = CreateMutex(NULL, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
 		goto error;
+	err = GetLastError();
 	if ((p->shared->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_HAS_SPACE_EVENT))) == NULL)
 		goto error;
+	err = GetLastError();
 	if ((p->shared->hasData = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL)
 		goto error;
+	err = GetLastError();
 	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
 		goto error;
+	err = GetLastError();
 	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
 		goto error;
+	err = GetLastError();
 	return;
 error:
 	return;
@@ -137,11 +148,11 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 	int err;
 	if (pipe == NULL)
 		return NULL;
-	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, pipeServiceName);
+	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
 	if (pipe->mapHandle == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED))) == NULL)
 		return NULL;
 	err = GetLastError();
 	if ((pipe->shared->mtx = OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
@@ -169,10 +180,12 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 		return NULL;
 	}
 	err = GetLastError();
+	pipe->shared->nWriters += 1;
 	SetEvent(pipe->shared->waitWriters);
 	err = GetLastError();
-	pipe->shared->nWriters += 1;
+	
 	ReleaseMutex(pipe->shared->mtx);
+	//ReleaseMutex(pipe->shared->mtx);
 	err = GetLastError();
 	pipe->mode = PIPE_WRITE;
 	DWORD val = WaitForSingleObject(pipe->shared->waitReaders, INFINITE);
@@ -254,11 +267,11 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	if (pipe == NULL)
 		return NULL;
 
-	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, pipeServiceName);
+	pipe->mapHandle = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
 	if (pipe->mapHandle == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED))) == NULL)
 		return NULL;
 	err = GetLastError();
 	if ((pipe->shared->mtx = OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
@@ -286,9 +299,10 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 		return NULL;
 	}
 	err = GetLastError();
+	pipe->shared->nReaders += 1;
 	SetEvent(pipe->shared->waitReaders);
 	err = GetLastError();
-	pipe->shared->nReaders += 1;
+	
 	ReleaseMutex(pipe->shared->mtx);
 	err = GetLastError();
 	pipe->mode = PIPE_READ;

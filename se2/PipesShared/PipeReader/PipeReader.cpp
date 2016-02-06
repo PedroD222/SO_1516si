@@ -65,7 +65,27 @@ int _tmain(int argc, _TCHAR* argv[])
 	//PPIPE create = PipeCreate(_T("pipe"));
 	//HANDLE pipe = PipeOpenRead(_T("pipe"));
 	//PPIPE create = PipeCreate(NAMEPIPE);
-	PipeTest_OneClient_OneServer();
+	//PipeTest_OneClient_OneServer();
+	//
+	////PPIPE ppipe = (PPIPE)arg;
+	HANDLE p = PipeOpenRead(NAMEPIPE);
+
+	MESSAGE m = { 0 };
+	char currchar = 'A';
+	UINT ret = 1;
+
+	// try for one thousand times
+	while (PipeRead(p, m, MSG_SIZE) != 0) {
+		if (!CheckMessageTest2(m, currchar)) {
+			ret = 0;
+			break;
+		}
+
+		if (currchar == 'Z') currchar = 'A';
+		else currchar++;
+	}
+	PipeClose(p);
+	
 	getchar();
 	return 0;
 }
