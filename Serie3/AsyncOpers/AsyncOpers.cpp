@@ -24,6 +24,11 @@ DWORD CtxGetTransferedBytes(LPVOID ctx) {
 	return aop->transferedBytes;
 }
 
+/*TODO
+ CtxGetLine(LPVOID ctx) {
+	
+}*/
+
 // Device access creators
 
 // Create an AsyncDev from a file

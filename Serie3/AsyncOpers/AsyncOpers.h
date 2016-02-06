@@ -21,6 +21,9 @@ typedef struct IOAsyncDev {
 	OVERLAPPED ovr;		// representa (para o windows) a operação de I/O em curso
 	HANDLE dev;			// handle para o ficheiro associado
 	PIOBaseOper oper;	// refere a operação em curso
+	/*fields for Op Readline
+	BYTE buffer[CP_BUF_SIZE];
+	DWORD idRead, nSpaceAvailable;*/
 } IOAsyncDev, *PIOAsyncDev;
 
 
@@ -60,7 +63,7 @@ PIOAsyncDev OpenAsync(LPCTSTR fileName);
 PIOAsyncDev CreateAsync(LPCTSTR fileName);
 VOID CloseAsync(PIOAsyncDev ah);
 
-
+VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx);
 VOID FileCopyAsync(LPCTSTR fileIn, LPCTSTR fileOut, PCallback cb, LPVOID ctx);
 BOOL CopyFile2Async(LPCTSTR file, LPCTSTR fileOut, PCallback cb, LPVOID ctx); 
 BOOL ReadAsync(PIOAsyncDev ah, LARGE_INTEGER offset, LPVOID buffer, DWORD length, PCallback cb, LPVOID ctx);

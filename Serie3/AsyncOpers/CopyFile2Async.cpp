@@ -35,24 +35,20 @@ VOID CopyFileAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 			TerminateCopyFile(aop);
 			return;
 		}
-		else {
+		/*else {
 			aop->action = Write;
 			if (!AsyncWrite(aop->adOut->dev, aop->buffer, transferedBytes, &aop->adOut->ovr)) {
 				OperSetError(op);
 				TerminateCopyFile(aop);
 			}
-		}
+		}*/
 	}
-	else {
+	/*else {
 		aop->action = Read;
 		if (!AsyncRead(aop->base.aHandle->dev, aop->buffer,CP_BUF_SIZE, &aop->base.aHandle->ovr)) {
 			OperSetError(op);
 			TerminateCopyFile(aop);
 		}
-	}
-	/*if (!WriteAsync(aop->adOut, { 0 }, aop->buffer, transferedBytes, aop->adOut->oper->userCb, aop->adOut->oper->uCtx)) {
-		OperSetError(op);
-		TerminateCopyFile(aop);
 	}*/
 }
 

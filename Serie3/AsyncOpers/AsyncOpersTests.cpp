@@ -27,7 +27,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	StartAsync();
 	//FileCopyAsyncTest(argv[1], argv[2]);
 	//FileDumpAsyncTest(argv[1]);
-	writeAsyncTest();
+	//writeAsyncTest();
 	CopyFileAsyncTest(argv[1], argv[2]);
 	getchar();
 	return 0;
