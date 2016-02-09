@@ -19,25 +19,26 @@ typedef struct PipeHandle {
 } PIPE_HANDLE, *PPIPE_HANDLE;
 
 TCHAR szName[] = TEXT("PIPE");
-#define PIPE_MUTEX_LOCK "Global\\PipeMutex"
-#define PIPE_EVENT_WAITING_READERS "Global\\WaitReaders"
-#define PIPE_EVENT_WAITING_WRITERS "Global\\WaitWriters"
-#define PIPE_HAS_DATA_EVENT "Global\\EmptyPipeEv"
-#define PIPE_HAS_SPACE_EVENT "Global\\fullPipeEv"
+#define PIPE_MUTEX_LOCK "PipeMutex"
+#define PIPE_EVENT_WAITING_READERS "WaitReaders"
+#define PIPE_EVENT_WAITING_WRITERS "WaitWriters"
+#define PIPE_HAS_DATA_EVENT "EmptyPipeEv"
+#define PIPE_HAS_SPACE_EVENT "fullPipeEv"
 
 static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
 	//InitializeCriticalSection(&p->cs);
 	int err;
 	int sz = sizeof(PIPE_SHARED);
-
+	//SeCreateG
 	p->mapHandle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(PIPE_SHARED), szName);
+	err = GetLastError();
 	if (p->mapHandle == NULL)
 		goto error;
-	err = GetLastError();
+	
 
 
-	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED));
+	p->shared = (PPIPE_SHARED)MapViewOfFile(p->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0);// sizeof(PIPE_SHARED));
 	//int **addr = &(p->shared);
 	if (p->shared == NULL)
 		goto error;
@@ -52,19 +53,19 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	SECURITY_ATTRIBUTES secur;
 	secur.lpSecurityDescriptor = */
 
-	if ((p->shared->mtx = CreateMutex(NULL, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
+	if ((p->mtx = CreateMutex(NULL, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
 		goto error;
 	err = GetLastError();
-	if ((p->shared->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_HAS_SPACE_EVENT))) == NULL)
+	if ((p->hasSpace = CreateEvent(NULL, TRUE, TRUE, _T(PIPE_HAS_SPACE_EVENT))) == NULL)
 		goto error;
 	err = GetLastError();
-	if ((p->shared->hasData = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL)
+	if ((p->hasData = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL)
 		goto error;
 	err = GetLastError();
-	if ((p->shared->waitReaders = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
+	if ((p->waitReaders = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL)
 		goto error;
 	err = GetLastError();
-	if ((p->shared->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
+	if ((p->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
 		goto error;
 	err = GetLastError();
 	return;
@@ -89,12 +90,12 @@ PPIPE PipeCreate(TCHAR *pipeServiceName) {
 static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	//PPIPE_SHARED shared = p->shared;
 	int err;
-	WaitForSingleObject(p->shared->hasSpace, INFINITE);
+	WaitForSingleObject(p->hasSpace, INFINITE);
 	err = GetLastError();
 	int largerThanAtomic = toWrite - ATOMIC_RW;
 
 	for (;;) {
-		WaitForSingleObject(p->shared->mtx, INFINITE);
+		WaitForSingleObject(p->mtx, INFINITE);
 		err = GetLastError();
 		if (BUFFER_SIZE - p->shared->nBytes >= toWrite) {
 			//ReleaseMutex(shared->mtx);
@@ -105,7 +106,7 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 			//ReleaseMutex(shared->mtx);
 			break;
 		}
-		ReleaseMutex(p->shared->mtx);
+		ReleaseMutex(p->mtx);
 	}
 	int byteWrite = 0;
 	PBYTE pb = (PBYTE)pbuf;
@@ -119,14 +120,14 @@ static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	}
 
 	if (p->shared->nBytes >= 1) {
-		SetEvent(p->shared->hasData);
+		SetEvent(p->hasData);
 		err = GetLastError();
 	}
 	if (p->shared->nBytes == BUFFER_SIZE) {
-		ResetEvent(p->shared->hasSpace);
+		ResetEvent(p->hasSpace);
 		err = GetLastError();
 	}
-	ReleaseMutex(p->shared->mtx);
+	ReleaseMutex(p->mtx);
 	err = GetLastError();
 	if (largerThanAtomic > 0)
 		return byteWrite + PipeWriteInternal(p, pb + byteWrite, largerThanAtomic);
@@ -152,43 +153,45 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 	if (pipe->mapHandle == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED))) == NULL)
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared->mtx = OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
+	if ((pipe->mtx = OpenMutex(MUTEX_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
 		return NULL;
+	//if ((pipe->mtx = CreateMutex(NULL, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
+		//return NULL;
 	err = GetLastError();
-	WaitForSingleObject(pipe->shared->mtx, INFINITE);
+	WaitForSingleObject(pipe->mtx, INFINITE);
 	err = GetLastError();
-	if ((pipe->shared->waitReaders = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
-		return NULL;
-	}
-	err = GetLastError();
-	if ((pipe->shared->waitWriters = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->waitReaders = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
-	if ((pipe->shared->hasSpace = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_SPACE_EVENT))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->waitWriters = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
-	if ((pipe->shared->hasData = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->hasSpace = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_HAS_SPACE_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
+		return NULL;
+	}
+	err = GetLastError();
+	if ((pipe->hasData = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
 	pipe->shared->nWriters += 1;
-	SetEvent(pipe->shared->waitWriters);
+	SetEvent(pipe->waitWriters);
 	err = GetLastError();
 	
-	ReleaseMutex(pipe->shared->mtx);
+	ReleaseMutex(pipe->mtx);
 	//ReleaseMutex(pipe->shared->mtx);
 	err = GetLastError();
 	pipe->mode = PIPE_WRITE;
-	DWORD val = WaitForSingleObject(pipe->shared->waitReaders, INFINITE);
+	DWORD val = WaitForSingleObject(pipe->waitReaders, INFINITE);
 	err = GetLastError();
 	return pipe;
 }
@@ -203,12 +206,12 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 		return 0;
 	}
 	int err;
-	WaitForSingleObject(p->shared->hasData, INFINITE);
+	WaitForSingleObject(p->hasData, INFINITE);
 	err = GetLastError();
 	int can_read_atomic = toRead - ATOMIC_RW;
 
 	for (;;) {
-		WaitForSingleObject(p->shared->mtx, INFINITE);
+		WaitForSingleObject(p->mtx, INFINITE);
 		err = GetLastError();
 		if (p->shared->nBytes - ATOMIC_RW >= 0) {
 			//ReleaseMutex(shared->mtx);
@@ -218,7 +221,7 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 			//ReleaseMutex(shared->mtx);
 			break;
 		}
-		ReleaseMutex(p->shared->mtx);
+		ReleaseMutex(p->mtx);
 	}
 	printf("to read");
 	int byteRead = 0;
@@ -233,14 +236,14 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 	p->shared->nBytes = p->shared->nBytes - byteRead;
 
 	if (p->shared->nBytes < BUFFER_SIZE){
-		SetEvent(p->shared->hasSpace); err = GetLastError();
+		SetEvent(p->hasSpace); err = GetLastError();
 	}
 		
 	if (p->shared->nBytes == 0) {
-		ResetEvent(p->shared->hasData);
+		ResetEvent(p->hasData);
 		err = GetLastError();
 	}
-	ReleaseMutex(p->shared->mtx);
+	ReleaseMutex(p->mtx);
 	err = GetLastError();
 	if (can_read_atomic > 0)
 		return byteRead + PipeReadInternal(p, pb + byteRead, can_read_atomic);
@@ -271,42 +274,45 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 	if (pipe->mapHandle == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(PIPE_SHARED))) == NULL)
+	if ((pipe->shared = (PPIPE_SHARED)MapViewOfFile(pipe->mapHandle, FILE_MAP_ALL_ACCESS, 0, 0, 0)) == NULL)
 		return NULL;
 	err = GetLastError();
-	if ((pipe->shared->mtx = OpenMutex(MUTEX_ALL_ACCESS, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
+	if ((pipe->mtx = OpenMutex(MUTEX_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
 		return NULL;
+	/*if ((pipe->mtx = CreateMutex(NULL, FALSE, _T(PIPE_MUTEX_LOCK))) == NULL)
+	*/	//return NULL;
+	//DuplicateHandle(OpenProcess(PROCESS_ALL_ACCESS, FALSE, pipe->shared->procId), pipe->shared->)
 	err = GetLastError();
-	WaitForSingleObject(pipe->shared->mtx, INFINITE);
+	WaitForSingleObject(pipe->mtx, INFINITE);
 	err = GetLastError();
-	if ((pipe->shared->waitReaders = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
-		return NULL;
-	}
-	err = GetLastError();
-	if ((pipe->shared->waitWriters = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->waitReaders = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_EVENT_WAITING_READERS))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
-	if ((pipe->shared->hasSpace = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_SPACE_EVENT))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->waitWriters = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
-	if ((pipe->shared->hasData = OpenEvent(EVENT_ALL_ACCESS, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL){
-		ReleaseMutex(pipe->shared->mtx);
+	if ((pipe->hasSpace = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_HAS_SPACE_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
+		return NULL;
+	}
+	err = GetLastError();
+	if ((pipe->hasData = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_HAS_DATA_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
 	err = GetLastError();
 	pipe->shared->nReaders += 1;
-	SetEvent(pipe->shared->waitReaders);
+	SetEvent(pipe->waitReaders);
 	err = GetLastError();
 	
-	ReleaseMutex(pipe->shared->mtx);
+	ReleaseMutex(pipe->mtx);
 	err = GetLastError();
 	pipe->mode = PIPE_READ;
-	WaitForSingleObject(pipe->shared->waitWriters, INFINITE);
+	WaitForSingleObject(pipe->waitWriters, INFINITE);
 	err = GetLastError();
 	return pipe;
 }
@@ -322,16 +328,16 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 
 
 VOID PipeDestroy(PPIPE pipe) {
-	PPIPE_SHARED shared = pipe->shared;
+	//PPIPE_SHARED shared = pipe->shared;
 
-	if (shared->hasData != NULL)
-		CloseHandle(shared->hasData);
-	if (shared->hasSpace != NULL)
-		CloseHandle(shared->hasSpace);
-	if (shared->waitReaders != NULL)
-		CloseHandle(shared->waitReaders);
-	if (shared->waitWriters != NULL)
-		CloseHandle(shared->waitWriters);
+	if (pipe->hasData != NULL)
+		CloseHandle(pipe->hasData);
+	if (pipe->hasSpace != NULL)
+		CloseHandle(pipe->hasSpace);
+	if (pipe->waitReaders != NULL)
+		CloseHandle(pipe->waitReaders);
+	if (pipe->waitWriters != NULL)
+		CloseHandle(pipe->waitWriters);
 
 	if (UnmapViewOfFile(pipe->mapHandle) == 0)
 		return;
@@ -345,7 +351,7 @@ VOID PipeClose(HANDLE h) {
 	PPIPE pipe = (PPIPE)h;
 	PPIPE_SHARED shared = pipe->shared;
 
-	WaitForSingleObject(shared->mtx, INFINITE);
+	WaitForSingleObject(pipe->mtx, INFINITE);
 	if (pipe->mode == PIPE_READ) {
 		shared->nReaders--;
 	}
@@ -355,15 +361,15 @@ VOID PipeClose(HANDLE h) {
 		}
 
 	if (shared->nWriters == 0 && shared->nReaders == 0) {
-		ReleaseMutex(shared->mtx);
+		ReleaseMutex(pipe->mtx);
 		PipeDestroy(pipe);
 		return;
 	}
 	if (shared->nReaders == 0)
-		ResetEvent(shared->waitReaders);
+		ResetEvent(pipe->waitReaders);
 	if (shared->nWriters == 0)
-		ResetEvent(shared->waitWriters);
-	ReleaseMutex(shared->mtx);
+		ResetEvent(pipe->waitWriters);
+	ReleaseMutex(pipe->mtx);
 }
 
 
