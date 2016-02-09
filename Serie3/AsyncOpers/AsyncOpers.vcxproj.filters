@@ -38,6 +38,9 @@
     <ClCompile Include="CopyFile2AsyncTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="ReadLineAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncOpers.h" />
