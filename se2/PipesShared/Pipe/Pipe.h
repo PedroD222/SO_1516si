@@ -23,20 +23,22 @@
 typedef struct pipe_shared {
 	INT nReaders, nWriters;		// Number of readers and writers 
 	// (used among other reasons for pipe lifetime)
-	HANDLE hasData, hasSpace, waitReaders, waitWriters;
+	
 	BYTE buffer[BUFFER_SIZE];	// (circular) data buffer
 	INT idxGet, idxPut;			// R/W indexes
 	INT nBytes;					// Avaiable bytes;
 
 	DWORD procId;
 	//DWORD nReaders, nWriters;
-	HANDLE mtx;
+	
 } PIPE_SHARED, *PPIPE_SHARED;
 
 typedef struct pipe{
 	HANDLE mapHandle;
 	PPIPE_SHARED shared;
 	DWORD mode;
+	HANDLE hasData, hasSpace, waitReaders, waitWriters;
+	HANDLE mtx;
 } PIPE, *PPIPE;
 
 PIPE_API
