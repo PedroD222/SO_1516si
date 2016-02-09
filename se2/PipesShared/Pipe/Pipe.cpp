@@ -19,7 +19,7 @@ typedef struct PipeHandle {
 } PIPE_HANDLE, *PPIPE_HANDLE;
 
 TCHAR szName[] = TEXT("PIPE");
-#define PIPE_MUTEX_LOCK "Global\\PipeMutex"
+#define PIPE_MUTEX_LOCK "PipeMutex"
 #define PIPE_EVENT_WAITING_READERS "Global\\WaitReaders"
 #define PIPE_EVENT_WAITING_WRITERS "Global\\WaitWriters"
 #define PIPE_HAS_DATA_EVENT "Global\\EmptyPipeEv"
@@ -47,7 +47,7 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	p->shared->nReaders = p->shared->nWriters = 0;
 	p->shared->idxGet = p->shared->idxPut = p->shared->nBytes = 0;
 	
-	SECURITY_DESCRIPTOR desc;
+	//SECURITY_DESCRIPTOR desc;
 	/*desc.
 	SECURITY_ATTRIBUTES secur;
 	secur.lpSecurityDescriptor = */
