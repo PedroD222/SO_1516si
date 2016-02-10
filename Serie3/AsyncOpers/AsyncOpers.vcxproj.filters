@@ -41,6 +41,9 @@
     <ClCompile Include="ReadLineAsync.cpp">
       <Filter>Opers</Filter>
     </ClCompile>
+    <ClCompile Include="ReadLineAsyncTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncOpers.h" />

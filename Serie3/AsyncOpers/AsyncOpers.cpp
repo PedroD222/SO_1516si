@@ -25,10 +25,11 @@ DWORD CtxGetTransferedBytes(LPVOID ctx) {
 }
 
 PCHAR CtxGetLine(LPVOID ctx) {
-	PIOBaseOper op = (PIOBaseOper)ctx;
-	PCHAR line = (PCHAR)malloc(op->aHandle->idRead*sizeof(char));
-	for (DWORD i = 0; i < op->aHandle->idRead; i++) {
-		line[i] = op->aHandle->buffer[i];
+	PIOAsyncDev dev = (PIOAsyncDev)ctx;
+	
+	PCHAR line = (PCHAR)malloc(dev->idRead*sizeof(char));
+	for (DWORD i = 0; i < dev->idRead; i++) {
+		line[i] = dev->buffer[i];
 	}
 	return line;
 }

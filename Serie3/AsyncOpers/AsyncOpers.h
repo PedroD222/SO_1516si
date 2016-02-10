@@ -89,6 +89,7 @@ VOID OperSetOK(PIOBaseOper oper) { OperSetSuccess(oper, TRUE); }
 
 LPVOID CtxGetUserContext(LPVOID ctx);
 DWORD CtxGetTransferedBytes(LPVOID ctx);
+PCHAR CtxGetLine(LPVOID ctx);
 
 
 // auxiliary functions

@@ -9,17 +9,13 @@ typedef enum copyAction { Read, Write } CopyAction;
 
 typedef struct ReadLineAsyncOper {
 	IOBaseOper base;
-	BYTE buffer[CP_BUF_SIZE];	// transfer buffer
 	CopyAction action;			// copy state
-	DWORD idRead, nSpaceAvailable;
 	HANDLE evtDone;
 } ReadLineAsyncOper, *PReadLineAsyncOper;
 
 // called for successful/unsuccessfull copy termination
 VOID TerminateReadLine(PReadLineAsyncOper op) {
-	
 	InvokeCallbackAndReleaseOper(&op->base);
-	
 }
 
 // the machine state implementation for copy
@@ -29,70 +25,49 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 		TerminateReadLine(aop);
 		return;
 	}
-	/*if (aop->action == Read) {
-		if (transferedBytes == 0) { // EOF
-			TerminateFileCopy(aop);
-			return;
-		}
-		else {
-			aop->action = Write;
-			if (!AsyncWrite(aop->adOut->dev, aop->buffer,
-				transferedBytes, &aop->adOut->ovr)) {
-				OperSetError(op);
-				TerminateFileCopy(aop);
-			}
-		}
-	}
-	else {
-		aop->action = Read;
-		if (!AsyncRead(aop->base.aHandle->dev, aop->buffer,
-			CP_BUF_SIZE, &aop->base.aHandle->ovr)) {
-			OperSetError(op);
-			TerminateFileCopy(aop);
-		}
-	}*/
+	
 }
 
-
-VOID InitReadLineOper(PReadLineAsyncOper aop, PCallback cb, LPVOID uctx) {
-	InitBase(&aop->base, NULL, cb, uctx, ReadLineAsyncCompleteAction);
+VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
+	InitBase(&aop->base, dev, cb, uctx, ReadLineAsyncCompleteAction);
 	aop->action = Read;
-	aop->idRead = 0;
-	aop->nSpaceAvailable = CP_BUF_SIZE;
+	dev->idRead = dev->nSpaceAvailable = 0;
 }
 
-VOID ReadLineCallback(PIOAsyncDev ah, LPVOID ctx) {
+VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	PReadLineAsyncOper readline = (PReadLineAsyncOper)ctx;
-
-	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
-	readline->nSpaceAvailable = readline->nSpaceAvailable - transferedBytes;
-	readline->idRead += transferedBytes;
-	for (DWORD i = 0; i < ah->idRead; i++) {
-		if (ah->buffer[i] == 10) {
+	DWORD trans = CtxGetTransferedBytes(ctx);
+	ah->nSpaceAvailable = ah->nSpaceAvailable - CtxGetTransferedBytes(ctx);
+	//TODO getline code after not here?
+	PCHAR l = CtxGetLine(ah);
+	BYTE b;
+	for (DWORD i = ah->idRead; i < CP_BUF_SIZE; i++) {
+		b = ah->buffer[i];
+		if (b == 10 || b == 13) {
 			ah->idRead = i;
 			ah->done = TRUE;
 			break;
 		}
 	}
+	//quando nao encontra o fim de linha
+	//
+	if (!ah->done) {
+		LARGE_INTEGER off = { 0 };
+		ah->idRead += trans;
+		off.LowPart = trans;
+		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, NULL);
+	}
+		
 }
 
 VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx) {
 	assert(cb != NULL);
 	PReadLineAsyncOper aop = (PReadLineAsyncOper)malloc(sizeof(ReadLineAsyncOper));
-	InitReadLineOper(aop, cb, ctx);
-	DWORD chartoread = 256;
-	DWORD szline = chartoread;
+	
+	InitReadLineOper(aop, dev, cb, ctx);
+	
+	DWORD szline = 256;
 	LARGE_INTEGER init = { 0 };
 	
-	aop->evtDone = CreateEvent(NULL, TRUE, FALSE, NULL);
-	//while (!dev->done) {
-		ReadAsync(dev, init, aop->buffer, szline, ReadLineCallback, aop);
-		szline += chartoread;
-	//}
-	
-	//WaitForSingleObject(aop->evtDone, INFINITE);
-		cb(dev, ctx);
-	//line finish or no ???????
-
-//	CloseHandle(aop->evtDone);
+	ReadAsync(dev, init, dev->buffer, szline, ReadLineCb, aop);
 }
