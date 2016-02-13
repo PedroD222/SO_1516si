@@ -13,10 +13,9 @@ VOID ReadLineCallback(PIOAsyncDev asyncDev, LPVOID ctx) {
 	SetEvent((HANDLE)CtxGetUserContext(ctx));
 }
 
-//TODO
 VOID ReadLineAsyncTest() {
 	HANDLE evtDone = CreateEvent(NULL, TRUE, FALSE, NULL);
-	PIOAsyncDev dev = OpenAsync(_T("TestWriteAsync.txt"));
+	PIOAsyncDev dev = OpenAsync(_T("TestReadline.txt"));
 	ReadLineAsync(dev, ReadLineCallback, evtDone);
 	WaitForSingleObject(evtDone, INFINITE);
 	CloseHandle(evtDone);

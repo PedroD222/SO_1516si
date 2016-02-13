@@ -18,8 +18,7 @@ VOID TerminateReadLine(PReadLineAsyncOper op) {
 	InvokeCallbackAndReleaseOper(&op->base);
 }
 
-// the machine state implementation for copy
-//necessary??
+/* the machine state implementation for copy
 VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 	PReadLineAsyncOper aop = (PReadLineAsyncOper)op;
 	if (!OperSuccess(op)) {
@@ -27,11 +26,11 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 		return;
 	}
 	
-}
+}*/
 
 VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
-	InitBase(&aop->base, dev, cb, uctx, ReadLineAsyncCompleteAction);
-	//InitBase(&aop->base, NULL, cb, uctx, ReadLineAsyncCompleteAction);
+	InitBase(&aop->base, dev, cb, uctx, NULL);
+	
 	aop->action = Read;
 	dev->idRead = 0;
 	dev->nSpaceAvailable = CP_BUF_SIZE;
@@ -59,23 +58,10 @@ VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	ah->idRead += trans;
 	
 	ah->done = IsEndOfLine(ah, begin);
-	
-	/*BYTE b;
-	for (DWORD i = ah->idRead; i < CP_BUF_SIZE; i++) {
-		b = ah->buffer[i];
-		if (b == 10 || b == 13) {
-			ah->idRead = i;
-			
-			//r->base.userCb(ah, &r->base);
-			//invoke cb passed to readline
-			break;
-		}
-	}*/
 	//quando nao encontra o fim de linha
 	if (!ah->done) {
 		LARGE_INTEGER off = { 0 };
-		ah->idRead += trans;
-		off.LowPart = trans;
+		off.LowPart = ah->idRead;
 		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, readline->base.uCtx);
 	}
 	else
