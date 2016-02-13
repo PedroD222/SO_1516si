@@ -23,7 +23,7 @@ typedef struct IOAsyncDev {
 	PIOBaseOper oper;	// refere a operação em curso
 	/*fields for Op Readline*/
 	BYTE buffer[CP_BUF_SIZE];
-	DWORD idRead, nSpaceAvailable;
+	DWORD idRead, nSpaceAvailable, szline;
 	BOOL done;
 } IOAsyncDev, *PIOAsyncDev;
 

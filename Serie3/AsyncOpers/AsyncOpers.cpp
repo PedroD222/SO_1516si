@@ -28,10 +28,10 @@ PCHAR CtxGetLine(LPVOID ctx) {
 	PIOAsyncDev dev = (PIOAsyncDev)ctx;
 	
 	DWORD  endLine = sizeof('\r') + sizeof('\n');
-	PCHAR line = (PCHAR)malloc(dev->idRead*sizeof(CHAR));
+	PCHAR line = (PCHAR)malloc(dev->szline*sizeof(CHAR));
 	BYTE b;
-	memcpy(line, dev->buffer, dev->idRead);
-	line[dev->idRead] = '\0';
+	memcpy(line, dev->buffer, dev->szline);
+	line[dev->szline] = '\0';
 	return line;
 }
 

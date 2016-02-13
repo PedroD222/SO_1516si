@@ -32,17 +32,18 @@ VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPV
 	InitBase(&aop->base, dev, cb, uctx, NULL);
 	
 	aop->action = Read;
-	dev->idRead = 0;
+	dev->idRead = dev->szline = 0;
 	dev->nSpaceAvailable = CP_BUF_SIZE;
 }
 
 BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 	PIOAsyncDev d = (PIOAsyncDev)ah;
 	BYTE b;
+	//DWORD bytesbuf = CP_BUF_SIZE - d->nSpaceAvailable;
 	for (DWORD i = begin; i < d->idRead; i++) {
 		b = d->buffer[i];
 		if (b == 10 || b == 13) {
-			d->idRead = i;
+			d->szline = i;
 			return TRUE;
 		}
 	}
