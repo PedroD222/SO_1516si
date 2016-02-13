@@ -3,11 +3,12 @@
 #include "AsyncOpersTests.h"
 
 VOID ReadLineCallback(PIOAsyncDev asyncDev, LPVOID ctx) {
-	if (!OperSuccess(ctx))
+	if (!OperSuccess(asyncDev))
 		printf("Error reading line!\n");
 	else {
 		printf("Line Read!\n");
-		//printf("Bytes transferidos: %d\n", CtxGetTransferedBytes(ctx));
+		PCHAR l = CtxGetLine(asyncDev);
+		printf("Linha Lida: %s\n", l);
 	}
 	SetEvent((HANDLE)CtxGetUserContext(ctx));
 }

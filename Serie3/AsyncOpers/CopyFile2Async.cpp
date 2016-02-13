@@ -23,37 +23,9 @@ VOID TerminateCopyFile(PCopyFileAsyncOper op) {
 	if (fileOut != NULL) CloseAsync(fileOut);
 }
 
-// the machine state implementation for copy
-VOID CopyFileAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
-	PCopyFileAsyncOper aop = (PCopyFileAsyncOper)op;
-	if (!OperSuccess(op)) {
-		TerminateCopyFile(aop);
-		return;
-	}
-	if (aop->action == Read) {
-		if (transferedBytes == 0) { // EOF
-			TerminateCopyFile(aop);
-			return;
-		}
-		/*else {
-			aop->action = Write;
-			if (!AsyncWrite(aop->adOut->dev, aop->buffer, transferedBytes, &aop->adOut->ovr)) {
-				OperSetError(op);
-				TerminateCopyFile(aop);
-			}
-		}*/
-	}
-	/*else {
-		aop->action = Read;
-		if (!AsyncRead(aop->base.aHandle->dev, aop->buffer,CP_BUF_SIZE, &aop->base.aHandle->ovr)) {
-			OperSetError(op);
-			TerminateCopyFile(aop);
-		}
-	}*/
-}
-
 VOID InitCopyFileOper(PCopyFileAsyncOper aop, PCallback cb, LPVOID uctx) {
-	InitBase(&aop->base, NULL, cb, uctx, CopyFileAsyncCompleteAction);
+	//nao precisa completeAction nao tem device directamente
+	InitBase(&aop->base, NULL, cb, uctx, NULL);
 	aop->action = Read;
 	aop->adOut = NULL;
 }
@@ -90,6 +62,5 @@ BOOL CopyFile2Async(LPCTSTR file, // pathname do ficheiro origem
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}
-	
 	return TRUE;
 }
