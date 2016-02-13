@@ -37,14 +37,29 @@ VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPV
 	dev->nSpaceAvailable = CP_BUF_SIZE;
 }
 
+BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
+	PIOAsyncDev d = (PIOAsyncDev)ah;
+	BYTE b;
+	for (DWORD i = begin; i < d->idRead; i++) {
+		b = d->buffer[i];
+		if (b == 10 || b == 13) {
+			d->idRead = i;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	PReadLineAsyncOper readline = (PReadLineAsyncOper)ctx;
 	PReadLineAsyncOper r = (PReadLineAsyncOper)readline->base.uCtx;
 	DWORD trans = CtxGetTransferedBytes(ctx);
-	ah->nSpaceAvailable = ah->nSpaceAvailable - CtxGetTransferedBytes(ctx);
+	ah->nSpaceAvailable = ah->nSpaceAvailable - trans;
+	DWORD begin = ah->idRead;
 	ah->idRead += trans;
-	//TODO getline code after not here?
-	PCHAR l = CtxGetLine(ah);
+	
+	ah->done = IsEndOfLine(ah, begin);
+	
 	/*BYTE b;
 	for (DWORD i = ah->idRead; i < CP_BUF_SIZE; i++) {
 		b = ah->buffer[i];

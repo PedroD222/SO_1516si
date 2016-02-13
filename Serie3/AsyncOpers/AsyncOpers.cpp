@@ -26,18 +26,12 @@ DWORD CtxGetTransferedBytes(LPVOID ctx) {
 
 PCHAR CtxGetLine(LPVOID ctx) {
 	PIOAsyncDev dev = (PIOAsyncDev)ctx;
-	//PIOBaseOper b = (PIOBaseOper)ctx;
-	PCHAR line = (PCHAR)malloc((dev->idRead-2)*sizeof(BYTE));
+	
+	DWORD  endLine = sizeof('\r') + sizeof('\n');
+	PCHAR line = (PCHAR)malloc(dev->idRead*sizeof(CHAR));
 	BYTE b;
-	for (DWORD i = 0; i < dev->idRead; i++) {
-		b = dev->buffer[i];
-		line[i] = b;
-			//dev->buffer[i];
-		if (b == 10 || b == 13) {
-			dev->idRead = i;
-			dev->done = TRUE;
-		}
-	}
+	memcpy(line, dev->buffer, dev->idRead);
+	line[dev->idRead] = '\0';
 	return line;
 }
 
