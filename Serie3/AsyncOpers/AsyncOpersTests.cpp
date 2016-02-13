@@ -18,6 +18,12 @@ VOID writeAsyncTest() {
 	WriteAsyncTest({ "Sistemas operativos - 15/16 si" }, 30, offset);
 }
 
+VOID CountLinesTest(LPCTSTR fileIn) {
+	printf("TEST COUNTLINES ASYNC\n");
+	LPCSTR match = "si";
+	CountLinesAsyncTest(fileIn, match);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	if (argc != 3) {
@@ -29,7 +35,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//FileDumpAsyncTest(argv[1]);
 	//writeAsyncTest();
 	//CopyFileAsyncTest(argv[1], argv[2]);
-	ReadLineAsyncTest();
+	//ReadLineAsyncTest();
+	CountLinesTest(argv[3]);
 	getchar();
 	return 0;
 }

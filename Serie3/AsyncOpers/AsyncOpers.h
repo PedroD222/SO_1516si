@@ -64,6 +64,7 @@ PIOAsyncDev OpenAsync(LPCTSTR fileName);
 PIOAsyncDev CreateAsync(LPCTSTR fileName);
 VOID CloseAsync(PIOAsyncDev ah);
 
+BOOL CountLinesAsync(LPCTSTR fileIn, LPCSTR match, PCallback cb, LPVOID ctx);
 VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx);
 VOID FileCopyAsync(LPCTSTR fileIn, LPCTSTR fileOut, PCallback cb, LPVOID ctx);
 BOOL CopyFile2Async(LPCTSTR file, LPCTSTR fileOut, PCallback cb, LPVOID ctx); 

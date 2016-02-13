@@ -89,6 +89,8 @@
   <ItemGroup>
     <ClCompile Include="CopyFile2Async.cpp" />
     <ClCompile Include="CopyFile2AsyncTests.cpp" />
+    <ClCompile Include="CountLinesAsync.cpp" />
+    <ClCompile Include="CountlinesTest.cpp" />
     <ClCompile Include="FileDumpAsync.cpp" />
     <ClCompile Include="FileDumpAsyncTest.cpp" />
     <ClCompile Include="FileCopyAsyncTest.cpp" />

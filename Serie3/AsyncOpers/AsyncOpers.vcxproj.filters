@@ -44,6 +44,12 @@
     <ClCompile Include="ReadLineAsyncTest.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="CountLinesAsync.cpp">
+      <Filter>Opers</Filter>
+    </ClCompile>
+    <ClCompile Include="CountlinesTest.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AsyncOpers.h" />
