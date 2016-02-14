@@ -49,7 +49,7 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	p->shared->nReaders = p->shared->nWriters = 0;
 	p->shared->idxGet = p->shared->idxPut = p->shared->nBytes = 0;
 	
-	SECURITY_DESCRIPTOR desc;
+	//SECURITY_DESCRIPTOR desc;
 	/*desc.
 	SECURITY_ATTRIBUTES secur;
 	secur.lpSecurityDescriptor = */

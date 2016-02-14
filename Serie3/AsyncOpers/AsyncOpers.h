@@ -2,7 +2,7 @@
 
 #include "CompletionPort.h"
 
-
+#define CP_BUF_SIZE (4096*16)
 #define BUFFER_SIZE 256
 
 typedef struct iOBaseOper IOBaseOper, *PIOBaseOper;
@@ -21,6 +21,10 @@ typedef struct IOAsyncDev {
 	OVERLAPPED ovr;		// representa (para o windows) a operação de I/O em curso
 	HANDLE dev;			// handle para o ficheiro associado
 	PIOBaseOper oper;	// refere a operação em curso
+	/*fields for Op Readline*/
+	BYTE buffer[CP_BUF_SIZE];
+	DWORD idRead, nSpaceAvailable, szline;
+	BOOL done;
 } IOAsyncDev, *PIOAsyncDev;
 
 
@@ -60,7 +64,8 @@ PIOAsyncDev OpenAsync(LPCTSTR fileName);
 PIOAsyncDev CreateAsync(LPCTSTR fileName);
 VOID CloseAsync(PIOAsyncDev ah);
 
-
+BOOL CountLinesAsync(LPCTSTR fileIn, LPCSTR match, PCallback cb, LPVOID ctx);
+VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx);
 VOID FileCopyAsync(LPCTSTR fileIn, LPCTSTR fileOut, PCallback cb, LPVOID ctx);
 BOOL CopyFile2Async(LPCTSTR file, LPCTSTR fileOut, PCallback cb, LPVOID ctx); 
 BOOL ReadAsync(PIOAsyncDev ah, LARGE_INTEGER offset, LPVOID buffer, DWORD length, PCallback cb, LPVOID ctx);
@@ -85,6 +90,7 @@ VOID OperSetOK(PIOBaseOper oper) { OperSetSuccess(oper, TRUE); }
 
 LPVOID CtxGetUserContext(LPVOID ctx);
 DWORD CtxGetTransferedBytes(LPVOID ctx);
+PCHAR CtxGetLine(LPVOID ctx);
 
 
 // auxiliary functions

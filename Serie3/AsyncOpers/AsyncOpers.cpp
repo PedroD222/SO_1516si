@@ -24,6 +24,17 @@ DWORD CtxGetTransferedBytes(LPVOID ctx) {
 	return aop->transferedBytes;
 }
 
+PCHAR CtxGetLine(LPVOID ctx) {
+	PIOAsyncDev dev = (PIOAsyncDev)ctx;
+	
+	DWORD  endLine = sizeof('\r') + sizeof('\n');
+	PCHAR line = (PCHAR)malloc(dev->szline*sizeof(CHAR));
+	BYTE b;
+	memcpy(line, dev->buffer, dev->szline);
+	line[dev->szline] = '\0';
+	return line;
+}
+
 // Device access creators
 
 // Create an AsyncDev from a file

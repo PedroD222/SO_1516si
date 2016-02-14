@@ -1,6 +1,6 @@
 //  Async File Copy
 #include "stdafx.h"
-#include "asyncopers.h"
+#include "AsyncOpers.h"
 
 // state of the copy machine state
 typedef enum copyAction { Read, Write } CopyAction;
