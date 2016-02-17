@@ -24,6 +24,7 @@ TCHAR szName[] = TEXT("PIPE");
 #define PIPE_EVENT_WAITING_WRITERS "WaitWriters"
 #define PIPE_HAS_DATA_EVENT "EmptyPipeEv"
 #define PIPE_HAS_SPACE_EVENT "fullPipeEv"
+#define PIPE_TERMINATED_EVENT "terminated"
 
 static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	printf("PipeInit partially implemented!\n");
@@ -67,6 +68,8 @@ static VOID PipeInit(PPIPE p, TCHAR * pipeServiceName) {
 	err = GetLastError();
 	if ((p->waitWriters = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_EVENT_WAITING_WRITERS))) == NULL)
 		goto error;
+	if ((p->terminated = CreateEvent(NULL, TRUE, FALSE, _T(PIPE_TERMINATED_EVENT))) == NULL)
+		goto error;
 	err = GetLastError();
 	return;
 error:
@@ -90,7 +93,22 @@ PPIPE PipeCreate(TCHAR *pipeServiceName) {
 static DWORD PipeWriteInternal(PPIPE p, PVOID pbuf, INT toWrite){
 	//PPIPE_SHARED shared = p->shared;
 	int err;
-	WaitForSingleObject(p->hasSpace, INFINITE);
+
+	HANDLE handles[] = { p->hasData, p->terminated };
+	DWORD idx;
+	WaitForSingleObject(p->mtx, INFINITE);
+	while (p->shared->nBytes == BUFFER_SIZE)
+	{
+		ReleaseMutex(p->mtx);
+		idx = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+		WaitForSingleObject(p->mtx, INFINITE);
+		if (idx == 1) {
+			ReleaseMutex(p->mtx);
+			return 0;
+		}
+	}
+	ReleaseMutex(p->mtx);
+	//WaitForSingleObject(p->hasSpace, INFINITE);
 	err = GetLastError();
 	int largerThanAtomic = toWrite - ATOMIC_RW;
 
@@ -182,6 +200,10 @@ HANDLE PipeOpenWrite(TCHAR *pipeServiceName){
 		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
+	if ((pipe->terminated = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_TERMINATED_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
+		return NULL;
+	}
 	err = GetLastError();
 	pipe->shared->nWriters += 1;
 	SetEvent(pipe->waitWriters);
@@ -200,13 +222,28 @@ static DWORD PipeReadInternal(PPIPE p, PVOID pbuf, INT toRead){
 
 	//PPIPE_SHARED shared = p->shared;
 	printf("before mtx");
-	//WaitForSingleObject(p->shared->mtx, INFINITE);
-	if (p->shared->nBytes == 0 && p->shared->nWriters == 0){
-		//ReleaseMutex(p->shared->mtx);
-		return 0;
+	
+	HANDLE handles[] = { p->hasData, p->terminated };
+	DWORD idx;
+	WaitForSingleObject(p->mtx, INFINITE);	
+	while (p->shared->nBytes == 0){
+		ReleaseMutex(p->mtx);
+		idx = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+		WaitForSingleObject(p->mtx,INFINITE);
+		if (idx == 1) {
+			ReleaseMutex(p->mtx);
+			return 0;
+		}
 	}
+	/*
+	if (p->shared->nBytes == 0 && p->shared->nWriters == 0){
+		ReleaseMutex(p->mtx);
+		return 0;
+	}*/
+	ReleaseMutex(p->mtx);
+	
 	int err;
-	WaitForSingleObject(p->hasData, INFINITE);
+	//WaitForSingleObject(p->hasData, INFINITE);
 	err = GetLastError();
 	int can_read_atomic = toRead - ATOMIC_RW;
 
@@ -304,6 +341,10 @@ HANDLE PipeOpenRead(TCHAR *pipeServiceName){
 		ReleaseMutex(pipe->mtx);
 		return NULL;
 	}
+	if ((pipe->terminated = OpenEvent(EVENT_ALL_ACCESS | SYNCHRONIZE, FALSE, _T(PIPE_TERMINATED_EVENT))) == NULL){
+		ReleaseMutex(pipe->mtx);
+		return NULL;
+	}
 	err = GetLastError();
 	pipe->shared->nReaders += 1;
 	SetEvent(pipe->waitReaders);
@@ -338,7 +379,8 @@ VOID PipeDestroy(PPIPE pipe) {
 		CloseHandle(pipe->waitReaders);
 	if (pipe->waitWriters != NULL)
 		CloseHandle(pipe->waitWriters);
-
+	if (pipe->terminated != NULL)
+		CloseHandle(pipe->terminated);
 	if (UnmapViewOfFile(pipe->mapHandle) == 0)
 		return;
 
@@ -365,10 +407,16 @@ VOID PipeClose(HANDLE h) {
 		PipeDestroy(pipe);
 		return;
 	}
-	if (shared->nReaders == 0)
+	if (shared->nReaders == 0){
+		SetEvent(pipe->terminated);
 		ResetEvent(pipe->waitReaders);
-	if (shared->nWriters == 0)
+	}
+		
+	if (shared->nWriters == 0){
+		SetEvent(pipe->terminated);
 		ResetEvent(pipe->waitWriters);
+	}
+		
 	ReleaseMutex(pipe->mtx);
 }
 

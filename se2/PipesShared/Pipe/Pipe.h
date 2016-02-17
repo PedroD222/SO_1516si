@@ -37,7 +37,7 @@ typedef struct pipe{
 	HANDLE mapHandle;
 	PPIPE_SHARED shared;
 	DWORD mode;
-	HANDLE hasData, hasSpace, waitReaders, waitWriters;
+	HANDLE hasData, hasSpace, waitReaders, waitWriters, terminated;
 	HANDLE mtx;
 } PIPE, *PPIPE;
 
