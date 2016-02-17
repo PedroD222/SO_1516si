@@ -51,8 +51,8 @@ BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 }
 
 VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
-	PReadLineAsyncOper readline = (PReadLineAsyncOper)ctx;
-	PReadLineAsyncOper r = (PReadLineAsyncOper)readline->base.uCtx;
+	
+	PReadLineAsyncOper read = (PReadLineAsyncOper)CtxGetUserContext(ctx);
 	DWORD trans = CtxGetTransferedBytes(ctx);
 	ah->nSpaceAvailable = ah->nSpaceAvailable - trans;
 	DWORD begin = ah->idRead;
@@ -63,10 +63,10 @@ VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	if (!ah->done) {
 		LARGE_INTEGER off = { 0 };
 		off.LowPart = ah->idRead;
-		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, readline->base.uCtx);
+		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, read);
 	}
 	else
-		r->base.userCb(ah, &r->base);
+		read->base.userCb(ah, &read->base);
 }
 
 VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx) {

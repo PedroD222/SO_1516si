@@ -34,11 +34,11 @@ VOID CFCallback(PIOAsyncDev ah, LPVOID ctx) {
 	PCopyFileAsyncOper toWrite = (PCopyFileAsyncOper)ctx;
 	
 	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
-	PCopyFileAsyncOper copyFile = (PCopyFileAsyncOper)toWrite->base.uCtx;
+	PCopyFileAsyncOper copyFile = (PCopyFileAsyncOper)CtxGetUserContext(ctx);
 	PCallback cb = (PCallback)copyFile->base.userCb;
 	//copyFile->base.uCtx event to sinalize an write on file
 	if (!WriteAsync(copyFile->adOut, {0}, copyFile->buffer, transferedBytes, cb, copyFile->base.uCtx)) {
-		TerminateCopyFile(toWrite);
+		TerminateCopyFile(copyFile);
 	}
 }
 
@@ -51,7 +51,7 @@ BOOL CopyFile2Async(LPCTSTR file, // pathname do ficheiro origem
 	InitCopyFileOper(copyFileAsync, cb, ctx);
 	origin = OpenAsync(file);
 	copyFileAsync->adOut = CreateAsync(fileOut);
-	if (copyFileAsync == NULL && origin == NULL && copyFileAsync->adOut == NULL) {
+	if (copyFileAsync == NULL || origin == NULL || copyFileAsync->adOut == NULL) {
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}	
