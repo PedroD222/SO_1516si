@@ -31,7 +31,6 @@ VOID InitCopyFileOper(PCopyFileAsyncOper aop, PCallback cb, LPVOID uctx) {
 }
 
 VOID CFCallback(PIOAsyncDev ah, LPVOID ctx) {
-	PCopyFileAsyncOper toWrite = (PCopyFileAsyncOper)ctx;
 	
 	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
 	PCopyFileAsyncOper copyFile = (PCopyFileAsyncOper)CtxGetUserContext(ctx);

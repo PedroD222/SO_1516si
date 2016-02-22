@@ -26,7 +26,7 @@ VOID CountLinesTest(LPCTSTR fileIn) {
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	if (argc != 3) {
+	if (argc != 4) {
 		_tprintf(_T("usage: asyncTest <file1> <file2>"));
 		return 1;
 	}
@@ -35,8 +35,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//FileDumpAsyncTest(argv[1]);
 	//writeAsyncTest();
 	//CopyFileAsyncTest(argv[1], argv[2]);
-	ReadLineAsyncTest();
-	//CountLinesTest(argv[3]);
+	//ReadLineAsyncTest();
+	CountLinesTest(argv[3]);
 	getchar();
 	return 0;
 }

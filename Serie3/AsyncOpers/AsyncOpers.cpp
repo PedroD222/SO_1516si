@@ -35,6 +35,13 @@ PCHAR CtxGetLine(LPVOID ctx) {
 	return line;
 }
 
+PCHAR CtxGetCountLines(LPVOID ctx) {
+	
+	PCHAR line = NULL;
+	
+	return line;
+}
+
 // Device access creators
 
 // Create an AsyncDev from a file

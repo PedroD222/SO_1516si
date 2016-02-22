@@ -24,7 +24,6 @@ typedef struct IOAsyncDev {
 	/*fields for Op Readline*/
 	BYTE buffer[CP_BUF_SIZE];
 	DWORD idRead, nSpaceAvailable, szline;
-	BOOL done;
 } IOAsyncDev, *PIOAsyncDev;
 
 

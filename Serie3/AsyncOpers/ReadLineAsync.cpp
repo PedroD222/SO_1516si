@@ -25,7 +25,6 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 		TerminateReadLine(aop);
 		return;
 	}
-	
 }*/
 
 VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
@@ -39,7 +38,7 @@ VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPV
 BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 	PIOAsyncDev d = (PIOAsyncDev)ah;
 	BYTE b;
-	//DWORD bytesbuf = CP_BUF_SIZE - d->nSpaceAvailable;
+	
 	for (DWORD i = begin; i < d->idRead; i++) {
 		b = d->buffer[i];
 		if (b == 10 || b == 13) {
@@ -58,9 +57,8 @@ VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	DWORD begin = ah->idRead;
 	ah->idRead += trans;
 	
-	ah->done = IsEndOfLine(ah, begin);
 	//quando nao encontra o fim de linha
-	if (!ah->done) {
+	if (!IsEndOfLine(ah, begin)) {
 		LARGE_INTEGER off = { 0 };
 		off.LowPart = ah->idRead;
 		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, read);
