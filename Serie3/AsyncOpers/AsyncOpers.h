@@ -7,6 +7,11 @@
 
 typedef struct iOBaseOper IOBaseOper, *PIOBaseOper;
 
+typedef struct IOReadLine {
+	BYTE buffer[CP_BUF_SIZE];
+	DWORD idRead, nSpaceAvailable, szline;
+}IOReadLine, *PIOReadLine;
+
 // Representa o acesso asssíncrono a um ficheiro.
 // O modelo não admite mais do que uma operação assíncrona 
 // sobre um ficheiro num dado momento, pelo que uma única estrutura overlapped
@@ -21,11 +26,11 @@ typedef struct IOAsyncDev {
 	OVERLAPPED ovr;		// representa (para o windows) a operação de I/O em curso
 	HANDLE dev;			// handle para o ficheiro associado
 	PIOBaseOper oper;	// refere a operação em curso
-	/*fields for Op Readline*/
-	BYTE buffer[CP_BUF_SIZE];
-	DWORD idRead, nSpaceAvailable, szline;
+	/* Op Readline*/
+	PIOReadLine readline;
+	/*BYTE buffer[CP_BUF_SIZE];
+	DWORD idRead, nSpaceAvailable, szline;*/
 } IOAsyncDev, *PIOAsyncDev;
-
 
 // definições associadas a uma operação assíncrona
 

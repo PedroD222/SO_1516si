@@ -29,20 +29,28 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 
 VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
 	InitBase(&aop->base, dev, cb, uctx, NULL);
-	
 	aop->action = Read;
-	dev->idRead = dev->szline = 0;
-	dev->nSpaceAvailable = CP_BUF_SIZE;
+	if (dev->readline == NULL) {
+		dev->readline = (PIOReadLine)malloc(sizeof(IOReadLine));
+		if (dev->readline != NULL) {
+			dev->readline->idRead = dev->readline->szline = 0;
+			dev->readline->nSpaceAvailable = CP_BUF_SIZE;
+		}
+	}
+
+	/*dev->idRead = dev->szline = 0;
+	dev->nSpaceAvailable = CP_BUF_SIZE;*/
 }
 
 BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 	PIOAsyncDev d = (PIOAsyncDev)ah;
+	PIOReadLine readline = d->readline;
 	BYTE b;
 	
-	for (DWORD i = begin; i < d->idRead; i++) {
-		b = d->buffer[i];
+	for (DWORD i = begin; i < readline->idRead; i++) {
+		b = readline->buffer[i];
 		if (b == 10 || b == 13) {
-			d->szline = i;
+			readline->szline = i;
 			return TRUE;
 		}
 	}
@@ -53,15 +61,16 @@ VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	
 	PReadLineAsyncOper read = (PReadLineAsyncOper)CtxGetUserContext(ctx);
 	DWORD trans = CtxGetTransferedBytes(ctx);
-	ah->nSpaceAvailable = ah->nSpaceAvailable - trans;
-	DWORD begin = ah->idRead;
-	ah->idRead += trans;
+	PIOReadLine readline = ah->readline;
+	readline->nSpaceAvailable = readline->nSpaceAvailable - trans;
+	DWORD begin = readline->idRead;
+	readline->idRead += trans;
 	
 	//quando nao encontra o fim de linha
 	if (!IsEndOfLine(ah, begin)) {
 		LARGE_INTEGER off = { 0 };
-		off.LowPart = ah->idRead;
-		ReadAsync(ah, off, ah->buffer+ah->idRead, 256, ReadLineCb, read);
+		off.LowPart = readline->idRead;
+		ReadAsync(ah, off, readline->buffer+readline->idRead, 256, ReadLineCb, read);
 	}
 	else
 		read->base.userCb(ah, &read->base);
@@ -76,5 +85,6 @@ VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx) {
 	DWORD szline = 256;
 	LARGE_INTEGER init = { 0 };
 	
-	ReadAsync(aop->base.aHandle, init, dev->buffer, szline, ReadLineCb, aop);
+	init.LowPart = dev->readline->idRead;
+	ReadAsync(aop->base.aHandle, init, dev->readline->buffer, szline, ReadLineCb, aop);
 }

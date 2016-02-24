@@ -15,8 +15,10 @@ VOID CountLinesCb(PIOAsyncDev ah, LPVOID ctx) {
 	ReadLineAsync(ah, CountLinesCb, clines);
 }
 
-VOID InitCountLinesOper(PCountLinesOp aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
+VOID InitCountLinesOper(PCountLinesOp aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx, LPCSTR m) {
 	InitBase(&aop->base, dev, cb, uctx, NULL);
+	dev->readline = NULL;
+	aop->match = m;
 }
 
 BOOL CountLinesAsync(LPCTSTR fileIn, // pathname do ficheiro
@@ -28,7 +30,7 @@ BOOL CountLinesAsync(LPCTSTR fileIn, // pathname do ficheiro
 	PIOAsyncDev dev = OpenAsync(fileIn);
 	if (dev == NULL)
 		return FALSE;
-	InitCountLinesOper(clines, dev, cb, ctx);
+	InitCountLinesOper(clines, dev, cb, ctx, match);
 	ReadLineAsync(dev, CountLinesCb, clines);
 
 	return TRUE;
