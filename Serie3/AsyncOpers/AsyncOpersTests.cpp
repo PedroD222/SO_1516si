@@ -34,9 +34,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//FileCopyAsyncTest(argv[1], argv[2]);
 	//FileDumpAsyncTest(argv[1]);
 	//writeAsyncTest();
-	//CopyFileAsyncTest(argv[1], argv[2]);
+	CopyFileAsyncTest(argv[1], argv[2]);
 	//ReadLineAsyncTest();
-	CountLinesTest(argv[3]);
+	//CountLinesTest(argv[3]);
 	getchar();
 	return 0;
 }

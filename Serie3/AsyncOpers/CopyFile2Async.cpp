@@ -31,12 +31,17 @@ VOID InitCopyFileOper(PCopyFileAsyncOper aop, PCallback cb, LPVOID uctx) {
 }
 
 VOID CFCallback(PIOAsyncDev ah, LPVOID ctx) {
-	
-	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
 	PCopyFileAsyncOper copyFile = (PCopyFileAsyncOper)CtxGetUserContext(ctx);
+	if (!OperSuccess(ctx)) {
+		TerminateCopyFile(copyFile);
+		return;
+	}
+	DWORD transferedBytes = CtxGetTransferedBytes(ctx);
+	
 	PCallback cb = (PCallback)copyFile->base.userCb;
 	//copyFile->base.uCtx event to sinalize an write on file
 	if (!WriteAsync(copyFile->adOut, {0}, copyFile->buffer, transferedBytes, cb, copyFile->base.uCtx)) {
+		OperSetError(&copyFile->base);
 		TerminateCopyFile(copyFile);
 	}
 }
@@ -51,6 +56,7 @@ BOOL CopyFile2Async(LPCTSTR file, // pathname do ficheiro origem
 	origin = OpenAsync(file);
 	copyFileAsync->adOut = CreateAsync(fileOut);
 	if (copyFileAsync == NULL || origin == NULL || copyFileAsync->adOut == NULL) {
+		OperSetError(&copyFileAsync->base);
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}	
@@ -58,6 +64,7 @@ BOOL CopyFile2Async(LPCTSTR file, // pathname do ficheiro origem
 	origin->oper = &copyFileAsync->base;
 	LARGE_INTEGER offset = { 0 };
 	if (!ReadAsync(copyFileAsync->base.aHandle, offset, copyFileAsync->buffer, CP_BUF_SIZE, CFCallback, copyFileAsync)) {
+		OperSetError(&copyFileAsync->base);
 		TerminateCopyFile(copyFileAsync);
 		return FALSE;
 	}

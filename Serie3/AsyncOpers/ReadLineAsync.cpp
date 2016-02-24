@@ -16,6 +16,7 @@ typedef struct ReadLineAsyncOper {
 // called for successful/unsuccessfull copy termination
 VOID TerminateReadLine(PReadLineAsyncOper op) {
 	InvokeCallbackAndReleaseOper(&op->base);
+	free(op->base.aHandle->readline);
 }
 
 /* the machine state implementation for copy
@@ -25,6 +26,10 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 		TerminateReadLine(aop);
 		return;
 	}
+}*/
+/*
+VOID TerminateReadLine(PReadLineAsyncOper op) {
+
 }*/
 
 VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
@@ -37,9 +42,6 @@ VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPV
 			dev->readline->nSpaceAvailable = CP_BUF_SIZE;
 		}
 	}
-
-	/*dev->idRead = dev->szline = 0;
-	dev->nSpaceAvailable = CP_BUF_SIZE;*/
 }
 
 BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
@@ -58,7 +60,6 @@ BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 }
 
 VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
-	
 	PReadLineAsyncOper read = (PReadLineAsyncOper)CtxGetUserContext(ctx);
 	DWORD trans = CtxGetTransferedBytes(ctx);
 	PIOReadLine readline = ah->readline;
