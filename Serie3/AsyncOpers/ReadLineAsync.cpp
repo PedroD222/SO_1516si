@@ -15,8 +15,8 @@ typedef struct ReadLineAsyncOper {
 
 // called for successful/unsuccessfull copy termination
 VOID TerminateReadLine(PReadLineAsyncOper op) {
-	InvokeCallbackAndReleaseOper(&op->base);
 	free(op->base.aHandle->readline);
+	free(op);
 }
 
 /* the machine state implementation for copy
@@ -61,6 +61,11 @@ BOOL IsEndOfLine(LPVOID ah, DWORD begin) {
 
 VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	PReadLineAsyncOper read = (PReadLineAsyncOper)CtxGetUserContext(ctx);
+	if (!OperSuccess(ctx)) {
+		OperSetError(&read->base);
+		TerminateReadLine(read);
+		return;
+	}
 	DWORD trans = CtxGetTransferedBytes(ctx);
 	PIOReadLine readline = ah->readline;
 	readline->nSpaceAvailable = readline->nSpaceAvailable - trans;
