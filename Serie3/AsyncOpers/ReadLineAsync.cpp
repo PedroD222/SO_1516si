@@ -27,10 +27,6 @@ VOID ReadLineAsyncCompleteAction(PIOBaseOper op, int transferedBytes) {
 		return;
 	}
 }*/
-/*
-VOID TerminateReadLine(PReadLineAsyncOper op) {
-
-}*/
 
 VOID InitReadLineOper(PReadLineAsyncOper aop, PIOAsyncDev dev, PCallback cb, LPVOID uctx) {
 	InitBase(&aop->base, dev, cb, uctx, NULL);
@@ -80,6 +76,7 @@ VOID ReadLineCb(PIOAsyncDev ah, LPVOID ctx) {
 	}
 	else
 		read->base.userCb(ah, &read->base);
+	
 }
 
 VOID ReadLineAsync(PIOAsyncDev dev, PCallback cb, LPVOID ctx) {

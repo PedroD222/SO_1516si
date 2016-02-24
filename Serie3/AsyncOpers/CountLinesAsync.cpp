@@ -7,9 +7,19 @@ typedef struct COUNTLINESOP {
 	LPCSTR match;
 }countLinesOp, * PCountLinesOp;
 
+VOID TerminateCountLines(PCountLinesOp op) {
+	CloseAsync(op->base.aHandle);
+	free(op);
+}
+
 VOID CountLinesCb(PIOAsyncDev ah, LPVOID ctx) {
 	PCHAR line = CtxGetLine(ah);
 	PCountLinesOp clines = (PCountLinesOp)CtxGetUserContext(ctx);
+	if (!OperSuccess(&clines->base)) {
+		OperSetError(&clines->base);
+		TerminateCountLines(clines);
+		return;
+	}
 	if (strstr(line, clines->match) != NULL)
 		clines->nLines++;
 	ReadLineAsync(ah, CountLinesCb, clines);
@@ -32,6 +42,5 @@ BOOL CountLinesAsync(LPCTSTR fileIn, // pathname do ficheiro
 		return FALSE;
 	InitCountLinesOper(clines, dev, cb, ctx, match);
 	ReadLineAsync(dev, CountLinesCb, clines);
-
 	return TRUE;
 }
